@@ -4,79 +4,76 @@ Phoinix.txt
 O que é Phoinix?
 ----------------
 
-Phoinix ['foiniks] é a palavra grega para tamareira
-(palmeira-das-tâmaras). É o nome para o pássaro místico que se queima
-depois de 500 anos e renasce de suas cinzas.
+Phoinix ['foiniks] é a palavra grega para a tâmara da palmeira. É também
+o nome de uma ave mística que se queima depois de 500 anos e renasce das
+suas próprias cinzas.
 
-Neste contexto Phoinix é o nome de um emulador de Nintendo Gameboy(TM)
-para a Plataforma Palm OS(R) Computing. Este era formalmente conhecido
-como PalmBoy, mas a Palm Inc. clama a palavra "Palm" como uma marca
-registrada.
+Neste contexto, Phoinix é nome de um emulador de Nintendo Gameboy(TM)
+para o Palm OS(R). O nome anterior era PalmBoy, mas a Palm Inc. diz que
+a palavra "Palm" é uma marca registrada.
 
-Outras Linguagens
------------------
+Outras línguas
+--------------
 
-A linguagem padrão do Phoinix é inglesa. Outras linguagens são
-suportadas apenas na aplicação e nos LEIAMEs. Todos os outros textos
-estão atualmente em inglês, desculpe.
+A linguagem padrão do Phoinix é inglês. Outras línguas existem somente
+no aplicativo e no LEIAME. Todos os outros textos estão atualmente em
+inglês, infelizmente.
 
 Copyleft
 --------
 
-Copyright 2000-2002 Bodo Wenzel.
+Copyright 2000-2007 Bodo Wenzel.
 
-Este programa é software grátis; você pode redistribuí-lo e ou
-modificá-lo sobre os termos da Licença Pública Geral GNU como
-publicado pela Free Software Foundation; ou versão 2 da Licença, ou
-(na sua opção) qualquer versão posterior.
+Este é um software livre; você pode redistribuí-lo e/ou modificá-lo nos
+termos da Licença Pública Geral GNU, como publicado pela Free Software
+Foundation; seja na versão 2 da Licença, ou (ao seu critério) uma
+versão posterior.
 
-Este programa é distribuído na esperança de que seja útil, mas SEM
-QUALQUER GARANTIA; sem até a garantia de MERCABILIDADE ou ENCAIXE PARA
-UM PROPÓSITO PARTICULAR. Veja a Licença Pública Geral GNU para mais
-detalhes.
+Este programa é distribuído ja esperança de ser útil, mas SEM QUAISQUER
+GARANTIAS; mesmo sem a garantia implícita de VENDABILIDADE ou
+ADEQUABILIDADE PARA UM PROPÓSITO PARTICULAR. Veja a Licença Pública
+Geral GNU para mais detalhes.
 
-Você deveria ter recebido uma cópia da Licença Pública Geral GNU junto
-com este programa; se não, escreva para a Free Software Foundation,
-Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+Você deveria ter recebido uma cópia da Licença Publica Geral GNU junto
+com este programa; se não, escreva para a  Free Software Foundation,
+Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-Início Rápido
--------------
+Inicialização rápida
+--------------------
 
-Por favor visite a homepage em http://phoinix.sourceforge.net como
-mencionado nos textos informativos da aplicação. Lá você encontrará
-muita informação, e muitas coisas que você pode se interessar.
+Visite a nossa homepage em http://phoinix.sourceforge.net como
+mencionado nos textos informativos do aplicativo. Há muitas outras
+informações, e a quase todas as coisas que você procura.
 
-Escolha o arquivo de linguagem que você quer, unzipe-o (se você está
-lendo este texto, você provavelmente já o fez). Então instale o
-arquivo "Phoinix.prc" normalmente.
+Escolha o arquivo da linguague que você quiser, e dê um unzip (se
+você está lendo este texto, você já deve tê-lo feito). Depois
+instale o arquivo "Phoinix.prc" da forma usual.
 
-Para deixá-lo pronto para executar, há alguns jogos grátis no arquivo
-"freegame.zip". Eles já estão convertidos, apenas unzipe e instale
-como antes.
+Para começar a jogar, há alguns jogos grátis no arquivo freegame.zip.
+Eles já estão convertidos, basta descompactar e instalar normalmente.
 
-Agora divirta-se...
+Divirta-se...
 
-Depois disso, você deveria ler a documentação. Para manter as coisas
-simples, eu zipei os arquivos da web em "doc.zip". Por favor baixe
-este arquivo, e unzipe-o onde você quiser. Use qualquer browser para
-ler os documentos, você pode usar qualquer editor de texto, também.
+Depois, você pode querer ler a documentação. Para facilitar a manutenção,
+eu compactei os arquivos da web no "doc.zip". Baixe o arquivo, e
+descompacte-o onde quiser. Use qualquer navegador para ler os
+documentos, ou mesmo um editor de textos.
 
-Se você precisa de ajuda
-------------------------
+Se precisar de ajuda
+--------------------
 
-Leia toda a documentação (em "doc.zip" e as dicas embutidas)
-cuidadosamente. Há boas chances de que sua pergunta já esteja
-respondida.
+Leia toda a documentação (em "doc.zip" e nas dicas do programa) cuida-
+dosamente. Há grandes chances que sua pergunta já tenha sido respondido.
 
-Se você acha que NÃO está respondida, mande um e-mail com informação
-suficiente Para o endereço apropriado listado nos docs. Perguntas como
-"Por que não executa?" são muito genéricas para serem respondidas.
-Descreva seu problema bem claramente.
+Se você achar que não está respondida, mande um e-mail com o máximo de
+informação possível para o e-mail mencionado nos documentos. Perguntas
+do tipo "Porque não roda?" são muito genéricas para serem respondidas.
+Descreva seu problema claramente.
 
-Não pergunte como pegar imagens de jogos comerciais. Isso é ilegal em
-todo o mundo! Tais pedidos serão silenciosamente ignorados.
+Não me pergunte como obter ROMs de jogos comerciais. Isso é ilegal no
+mundo todo. Esses pedidos são silenciosamente ignorados.
 
-Marcas Registradas
+Marcas registradas
 ------------------
 
 "Palm" é uma marca registrada da Palm.

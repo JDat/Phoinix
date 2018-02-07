@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2005 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: memory.h,v $
+ *  Revision 1.7  2005/05/26 19:35:47  bodowenzel
+ *  Moved game's info into game's entry, removing MemoryMbcInfo
+ *
+ *  Revision 1.6  2005/04/03 14:08:34  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.5  2005/01/29 10:26:08  bodowenzel
+ *  Manager form uses a scrollable table now for the list of games
+ *
+ *  Revision 1.4  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -37,6 +52,10 @@
 
 #ifndef MEMORY_H
 #define MEMORY_H
+
+/* === Includes =======================================================	*/
+
+#include "sections.h"
 
 /* === Constants ======================================================	*/
 
@@ -51,14 +70,6 @@ typedef enum {
   memoryMbcError = 0, memoryMbcUnknown, memoryMbcDefault,
   memoryMbc1, memoryMbc2, memoryMbc3, memoryMbc5
 } MemoryMbcType;
-
-typedef struct {
-  MemoryMbcType mbc;
-  const Char    *name;
-  UInt32        crc;
-  UInt16        romSize; /* in KB */
-  UInt16        ramSize; /* in bytes */
-} MemoryMbcInfoType;
 
 typedef struct {
   UInt8 vid8000[0x2000]; /* video RAM */
@@ -99,8 +110,6 @@ typedef struct {
 
 #ifdef __GNUC__ /* only if C preprocessing */
 
-extern MemoryMbcInfoType MemoryMbcInfo;
-
 /* NOTE:
  * As GB addresses are used as offsets, the addresses for Palm memory
  * blocks are offset by the base addresses.
@@ -132,13 +141,19 @@ extern UInt8             *MemoryMbc3RtcPtr; /* ptr to current register */
 
 #ifdef __GNUC__ /* only if C preprocessing */
 
-void MemoryRetrieveMbcInfo(void);
+Boolean MemoryRetrieveMbcInfo(void)
+  MEMORY_SECTION;
 
-Boolean MemorySetup(void);
-void MemoryCleanup(void);
-void MemoryResetState(MemoryStateType *stateP);
-void MemoryLoadState(MemoryStateType *stateP);
-void MemorySaveState(void *recP, UInt32 offset);
+Boolean MemorySetup(void)
+  MEMORY_SECTION;
+void MemoryCleanup(void)
+  MEMORY_SECTION;
+void MemoryResetState(void *recP, UInt32 offset)
+  MEMORY_SECTION;
+void MemoryLoadState(MemoryStateType *stateP)
+  MEMORY_SECTION;
+void MemorySaveState(void *recP, UInt32 offset)
+  MEMORY_SECTION;
 
 #endif
 
@@ -152,43 +167,78 @@ void MemorySaveState(void *recP, UInt32 offset);
  * just for exporting the names.
  */
 
-void MemoryMbcDummy(void);
-void MemoryMbc1RomSelect(void);
-void MemoryMbc1RomSelectL(void);
-void MemoryMbc1RomSelectH(void);
-void MemoryMbc1RamSelect(void);
-void MemoryMbc1ModeSelect(void);
-void MemoryMbc2RomSelect(void);
-void MemoryMbc3RomSelect(void);
-void MemoryMbc3RamSelect(void);
-void MemoryMbc3RtcRd(void);
-void MemoryMbc3RtcWr(void);
-void MemoryMbc3RtcLatch(void);
-void MemoryMbc3RtcWork(void);
-void MemoryMbc5RomSelect(void);
-void MemoryMbc5RamSelect(void);
+void MemoryMbcDummy(void)
+  MEMORY_SECTION;
+void MemoryMbc1RomSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc1RomSelectL(void)
+  MEMORY_SECTION;
+void MemoryMbc1RomSelectH(void)
+  MEMORY_SECTION;
+void MemoryMbc1RamSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc1ModeSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc2RomSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc3RomSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc3RamSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc3RtcRd(void)
+  MEMORY_SECTION;
+void MemoryMbc3RtcWr(void)
+  MEMORY_SECTION;
+void MemoryMbc3RtcLatch(void)
+  MEMORY_SECTION;
+void MemoryMbc3RtcWork(void)
+  MEMORY_SECTION;
+void MemoryMbc5RomSelect(void)
+  MEMORY_SECTION;
+void MemoryMbc5RamSelect(void)
+  MEMORY_SECTION;
 
-void MemoryRamRdExtNone(void);
-void MemoryRamWrExtNone(void);
-void MemoryRamRdExtMbc2(void);
-void MemoryRamWrExtMbc2(void);
-void MemoryRamRdExt2K(void);
-void MemoryRamWrExt2K(void);
-void MemoryRamRdExt8K(void);
-void MemoryRamWrExt8K(void);
+void MemoryRamRdExtNone(void)
+  MEMORY_SECTION;
+void MemoryRamWrExtNone(void)
+  MEMORY_SECTION;
+void MemoryRamRdExtMbc2(void)
+  MEMORY_SECTION;
+void MemoryRamWrExtMbc2(void)
+  MEMORY_SECTION;
+void MemoryRamRdExt2K(void)
+  MEMORY_SECTION;
+void MemoryRamWrExt2K(void)
+  MEMORY_SECTION;
+void MemoryRamRdExt8K(void)
+  MEMORY_SECTION;
+void MemoryRamWrExt8K(void)
+  MEMORY_SECTION;
 
-void MemoryRamNone(void);
-void MemoryRamTileBg(void);
-void MemoryRamTileBgWi(void);
-void MemoryRamTileOb(void);
-void MemoryRamTileBgOb(void);
-void MemoryRamTileBgWiOb(void);
-void MemoryRamMapNone(void);
-void MemoryRamMapBg(void);
-void MemoryRamMapWi(void);
-void MemoryRamMapBgWi(void);
-void MemoryRamOam(void);
-void MemoryRamOamEntry(void);
+void MemoryRamNone(void)
+  MEMORY_SECTION;
+void MemoryRamTileBg(void)
+  MEMORY_SECTION;
+void MemoryRamTileBgWi(void)
+  MEMORY_SECTION;
+void MemoryRamTileOb(void)
+  MEMORY_SECTION;
+void MemoryRamTileBgOb(void)
+  MEMORY_SECTION;
+void MemoryRamTileBgWiOb(void)
+  MEMORY_SECTION;
+void MemoryRamMapNone(void)
+  MEMORY_SECTION;
+void MemoryRamMapBg(void)
+  MEMORY_SECTION;
+void MemoryRamMapWi(void)
+  MEMORY_SECTION;
+void MemoryRamMapBgWi(void)
+  MEMORY_SECTION;
+void MemoryRamOam(void)
+  MEMORY_SECTION;
+void MemoryRamOamEntry(void)
+  MEMORY_SECTION;
 
 #endif
 

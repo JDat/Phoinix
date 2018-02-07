@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2004 Bodo Wenzel
+ * (c)2000-2006 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,13 +21,61 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
- *  Revision 1.5.2.1  2004/02/14 11:52:59  bodowenzel
- *  Corrected import from launcher
+ *  $Log: vfs.c,v $
+ *  Revision 1.21  2006/12/19 18:36:05  bodowenzel
+ *  Relaxed import from Launcher directory
+ *
+ *  Revision 1.20  2005/05/26 19:35:47  bodowenzel
+ *  Moved game's info into game's entry, removing MemoryMbcInfo
+ *
+ *  Revision 1.19  2005/05/03 08:40:34  bodowenzel
+ *  Adding states dirty flag for fewer error messages
+ *
+ *  Revision 1.18  2005/01/30 19:35:27  bodowenzel
+ *  Removed support for VFS mount and unmount
+ *
+ *  Revision 1.17  2005/01/29 10:25:37  bodowenzel
+ *  Added const qualifier to pointer parameters
+ *
+ *  Revision 1.16  2005/01/28 17:35:13  bodowenzel
+ *  Manager form uses a scrollable table now for the list of games
+ *
+ *  Revision 1.15  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.14  2004/10/18 17:48:51  bodowenzel
+ *  Dropped macro LITE, no need to maintain smaller code
+ *
+ *  Revision 1.13  2004/09/19 12:35:54  bodowenzel
+ *  Enhanced error reporting with string parameter
+ *
+ *  Revision 1.12  2004/06/20 14:19:46  bodowenzel
+ *  Adjustments for volume names, correct RAM name
+ *
+ *  Revision 1.11  2004/06/11 16:15:31  bodowenzel
+ *  Enhanced error reporting with MiscPostError()
+ *  Show names of game and volume when asking for overwrite
+ *
+ *  Revision 1.10  2004/04/13 19:47:04  bodowenzel
+ *  Last cleanups
+ *  Refactoring of deleting states
+ *
+ *  Revision 1.9  2004/04/05 21:56:55  bodowenzel
+ *  VFS review and its consequences
+ *
+ *  Revision 1.8  2004/03/02 19:24:16  bodowenzel
+ *  Changed to new error function MiscShowError()
+ *
+ *  Revision 1.7  2004/01/11 19:05:58  bodowenzel
+ *  Start of VFS review and correction
+ *
+ *  Revision 1.6  2003/04/27 09:35:00  bodowenzel
+ *  Create new file at copy
+ *  Added Lite edition
  *
  *  Revision 1.5  2002/12/19 21:23:24  bodowenzel
  *  Corrected display of busy form
@@ -50,36 +98,40 @@
  ************************************************************************
  */
 
-/* set non-zero for showing the busy form while calculating the CRC */
-#define SHOW_BUSY_FOR_CRC (0)
-/* set non-zero for showing the busy form while loading the game's state */
-#define SHOW_BUSY_FOR_LOAD (0)
-/* set non-zero for showing the busy form while unloading the game's state */
-#define SHOW_BUSY_FOR_UNLOAD (0)
-
 /* === Includes =======================================================	*/
 
 #include <PalmOS.h>
 #include <VFSMgr.h>
 
 #include "vfs.h"
+
 #include "Phoinix.h"
-#include "manager.h"
-#include "memory.h"
 #include "misc.h"
+#include "manager.h"
 #include "states.h"
+#include "ram.h"
 
 /* === Constants ======================================================	*/
 
-#define PHOINIX_DIR  "/PALM/Phoinix"
-#define LAUNCHER_DIR "/PALM/Launcher"
+/* I didn't find this definition in any header... */
+#define fileNameLength (256)
 
-#define SUFFIX_PDB  ".pdb"
-#define COPY_CHUNK_SIZE 8192
+#define phoinixDirName           "/PALM/Phoinix"
+#define phoinixDirFileNameLength \
+  (sizeof(phoinixDirName) - 1 + dmDBNameLength + pdbSuffixNameLength)
+
+#define launcherDirName           "/PALM/Launcher"
+#define launcherDirFileNameLength \
+  (sizeof(launcherDirName) - 1 + fileNameLength + pdbSuffixNameLength)
+
+#define pdbSuffixName       ".pdb"
+#define pdbSuffixNameLength (sizeof(pdbSuffixName) - 1)
+
+#define copyChunkSize (8192)
 
 /* === Typedefinitions ================================================	*/
 
-/* I didn't find this definition in any header... */
+/* I didn't find this definition in any header file... */
 typedef struct {
   UInt8          name[dmDBNameLength];
   UInt16         attributes;
@@ -97,1086 +149,990 @@ typedef struct {
 
 /* === Global and static variables ====================================	*/
 
-UInt16        VFSPresent = 0;  /* number of installed file systems */
-VFSVolumeType **VFSVolume = NULL;
+UInt16        VfsNumberOfVolumes;
+VfsVolumeType **VfsVolume;
 
-/* infos on currently opened state db */
-static UInt16                 VFSStateLoadedCardNo;
-static UInt16                 VFSStateLoadedVolIdx=0;
-static UInt32                 VFSStateLoadedCRC;
-static ManagerDbListEntryType *VFSGameLoaded = NULL;
-
-/* table for error to error string mapping */
-static const UInt16 VFSErrors[][2]= {
-  { errNone,                    stringerrNone },
-  { vfsErrBufferOverflow,       stringvfsErrBufferOverflow},
-  { vfsErrFileGeneric,          stringvfsErrFileGeneric},
-  { vfsErrFileBadRef,           stringvfsErrFileBadRef},
-  { vfsErrFileStillOpen,        stringvfsErrFileStillOpen},
-  { vfsErrFilePermissionDenied, stringvfsErrFilePermissionDenied},
-  { vfsErrFileAlreadyExists,    stringvfsErrFileAlreadyExists},
-  { vfsErrFileEOF,              stringvfsErrFileEOF},
-  { vfsErrFileNotFound,         stringvfsErrFileNotFound},
-  { vfsErrVolumeBadRef,         stringvfsErrVolumeBadRef},
-  { vfsErrVolumeStillMounted,   stringvfsErrVolumeStillMounted},
-  { vfsErrNoFileSystem,         stringvfsErrNoFileSystem},
-  { vfsErrBadData,              stringvfsErrBadData},
-  { vfsErrDirNotEmpty,          stringvfsErrDirNotEmpty},
-  { vfsErrBadName,              stringvfsErrBadName},
-  { vfsErrVolumeFull,           stringvfsErrVolumeFull},
-  { vfsErrUnimplemented,        stringvfsErrUnimplemented},
-  { vfsErrNotADirectory,        stringvfsErrNotADirectory},
-  { vfsErrIsADirectory,         stringvfsErrIsADirectory},
-  { vfsErrDirectoryNotFound,    stringvfsErrDirectoryNotFound},
-  { vfsErrNameShortened,        stringvfsErrNameShortened},
-  { dmErrAlreadyExists,         stringdmErrAlreadyExists},
-  { 0xffff,                     0xffff },
-};
+static VfsVolumeType VolumePalmRam = { "", vfsInvalidVolRef };
+static VfsVolumeType *VolumeFallback = &VolumePalmRam;
 
 /* === Function prototypes ============================================	*/
 
-static void VFSError(Err err, UInt16 msgStr);
-static Boolean VFSCheckDir(UInt16 volId);
-static Boolean VFSFileExists(UInt16 volId, Char *name);
+static Boolean ImportFromLauncherDir(UInt16 volRefNum)
+  VFS_SECTION;
 
-static void VFSMove_P2V(ManagerDbListEntryType *src, UInt16 dst);
-static void VFSMove_V2V(ManagerDbListEntryType *src, UInt16 dst);
-static void VFSMove_V2P(ManagerDbListEntryType *src, UInt16 dst);
-static Boolean VFSCopyFile(UInt16 err_msg,
-			   UInt16 src_vol, Char *src_name,
-			   UInt16 dst_vol, Char *dst_name);
+static MiscErrorType MoveRamToVfs(const ManagerDbListEntryType *gameP,
+				  UInt16 newVolIndex)
+  VFS_SECTION;
+static MiscErrorType MoveVfsToVfs(const ManagerDbListEntryType *gameP,
+				  UInt16 newVolIndex)
+  VFS_SECTION;
+static MiscErrorType MoveVfsToRam(const ManagerDbListEntryType *gameP)
+  VFS_SECTION;
+static MiscErrorType CopyFile(
+  UInt16 srcVolRefNum, const Char *srcFileName,
+  UInt16 dstVolRefNum, const Char *dstFileName)
+  VFS_SECTION;
 
-static void VFSImportFromLauncher(UInt16 vol);
-
-static Boolean VFSGetMissnamed(UInt16 vol, char *name1, char *name2);
-static void VFSPreScanVolume(UInt16 vol);
-
-static void VFSScanFS(void);
+static Boolean ProvidePhoinixDir(UInt16 volRefNum)
+  VFS_SECTION;
+static Boolean FileExists(UInt16 volRefNum, const Char *fileName)
+  VFS_SECTION;
 
 /* === Init and Exit ==================================================	*/
 
 /**
- * Checks for VFS and if present scans volumes.
+ * Sets up the volume list, checks for VFS and if present collects volume
+ * names.
+ *
+ * @return true if successful.
  */
-void VFSSetup(void) {
+Boolean VfsInit(void) {
   UInt32 vfsMgrVersion;
-
-  /* try to get vfs version from feature manager */
-  if (!FtrGet(sysFileCVFSMgr, vfsFtrIDVersion, &vfsMgrVersion)) {
-    /* ok, the VFS is there, scan for volumes ... */
-    VFSScanFS();
-
-    /* check if more than just the palms memory is available */
-    if (VFSPresent > 1) {
-      VFSVolume = MemPtrNew((sizeof(VFSVolumeType*) + sizeof(VFSVolumeType))
-	  		    * VFSPresent);
-      VFSScanFS();
-    }
-  }
-}
-
-/**
- * Cleans up.
- */
-void VFSExit(void) {
-  /* free allocated memory */
-  if (VFSVolume != NULL)
-    MemPtrFree(VFSVolume);
-}
-
-/* === General support functions ======================================	*/
-
-/**
- * Prints a VFS error message.
- *
- * @param  err    error number.
- * @param  msgStr index of additional message string.
- */
-static void VFSError(Err err, UInt16 msgStr) {
-  UInt16    i, errStr = stringvfsErrUnknown;
-  MemHandle errH, msgH;
-  char      *errP, *msgP;
-
-  if (msgStr == -1)
-    return;
-
-  msgH = (MemHandle)DmGetResource(strRsc, msgStr);
-  msgP = (char *)MemHandleLock(msgH);
-
-  if (err != -1) {
-    /* try to find matching error string */
-    for (i = 0; VFSErrors[i][0] != 0xffff; i++)
-      if (VFSErrors[i][0] == err)
-	errStr = VFSErrors[i][1];
-
-    errH = (MemHandle)DmGetResource(strRsc, errStr);
-    errP = (char *)MemHandleLock(errH);
-    FrmCustomAlert(alertIdVFS, msgP, errP, 0);
-    MemHandleUnlock(errH);
-  } else
-    FrmCustomAlert(alertIdGeneric, msgP, 0, 0);
-
-  MemHandleUnlock(msgH);
-}
-
-/**
- * Checks for application specific directory, creates it if necessary.
- *
- * @param  volId volume number.
- * @return true if successful.
- */
-static Boolean VFSCheckDir(UInt16 volId) {
-  Err     err;
-  FileRef file;
-
-  /* try to access phoinix dir */
-  if (VFSFileOpen(volId, PHOINIX_DIR, vfsModeRead, &file) == errNone) {
-    VFSFileClose(file);
-    return true;
-  }
-
-  /* try to create dir */
-  if ((err = VFSDirCreate(volId, PHOINIX_DIR)) == errNone)
-    return true;
-
-  VFSError(err, stringCreateDir);
-  return false;
-}
-
-/**
- * Checks for an existing file of the given name.
- *
- * @param  volId volume number.
- * @param  name  pointer to the filename.
- * @return true if file exists.
- */
-static Boolean VFSFileExists(UInt16 volId, Char *name) {
-  FileRef file;
-  Err     err;
-
-  /* try to open file */
-  if ((err = VFSFileOpen(volId, name, vfsModeRead, &file)) == errNone) {
-    VFSFileClose(file);
-    return true;
-  }
-
-  return false;
-}
-
-/* === Moving games between different media ===========================	*/
-
-/**
- * Moves the current game into the given destination.
- *
- * @param src pointer to the entry in the games list.
- * @param dst destination volume number.
- */
-void VFSMove(ManagerDbListEntryType *src, UInt16 dst) {
-  /* no VFS? */
-  if (VFSVolume == NULL)
-    return;
-
-  /* check if volume has really been changed */
-  if (src->volIdx == dst)
-    return;
-
-  if ((src->volIdx == 0) && (dst != 0))
-    VFSMove_P2V(src, dst);                   /* from palm to vfs */
-  else if ((src->volIdx != 0) && (dst != 0))
-    VFSMove_V2V(src, dst);                   /* from vfs to vfs */
-  else
-    VFSMove_V2P(src, dst);                   /* from vfs to palm */
-}
-
-/**
- * Moves from Palm RAM (internal) to VFS (external).
- *
- * @param src pointer to the entry in the games list.
- * @param dst destination volume number.
- */
-static void VFSMove_P2V(ManagerDbListEntryType *src, UInt16 dst) {
-  Err     err;
-  Char    gameName[20 + dmDBNameLength];   /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char    stateName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  LocalID dbIdGame, dbIdState;
-
-  /* check if phoinix dir exists */
-  if (!VFSCheckDir(VFSVolume[dst]->volId))
-    return;
-
-  /* build game file name */
-  StrPrintF(gameName, PHOINIX_DIR "/%s" SUFFIX_PDB, src->name);
-
-  if (VFSFileExists(VFSVolume[dst]->volId, gameName)) {
-    if (FrmAlert(alertIdOverwrite) != 0)
-      return;
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-  }
-
-  /* get local index of game database */
-  if ((dbIdGame = DmFindDatabase(src->cardNo, src->name)) == 0) {
-    VFSError(-1, stringExportDb);
-    return;
-  }
-
-  /* copy game database to card */
-  MiscShowBusy(true);
-  err = VFSExportDatabaseToFile(VFSVolume[dst]->volId,
-				gameName, src->cardNo, dbIdGame);
-  MiscShowBusy(false);
-  if (err != errNone) {
-    /* on error delete game database */
-    VFSError(err, stringExportDb);
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-    return;
-  }
-
-  /* build name of state database */
-  StrPrintF(stateName, gameStatesDbName, MemoryMbcInfo.crc);
-
-  /* close state database if open */
-  StatesClosePrefsAndStates();
-
-  /* get local index of state database */
-  if ((dbIdState = DmFindDatabase(src->cardNo, stateName)) != 0) {
-    /* build vfs file name of state database */
-    StrPrintF(stateName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	      MemoryMbcInfo.crc);
-
-    /* copy game database to card */
-    MiscShowBusy(true);
-    if (VFSFileExists(VFSVolume[dst]->volId, stateName))
-      VFSFileDelete(VFSVolume[dst]->volId, stateName);
-    err = VFSExportDatabaseToFile(VFSVolume[dst]->volId,
-				  stateName, src->cardNo, dbIdState);
-    MiscShowBusy(false);
-    if (err != errNone) {
-      /* on error delete game/state database already copied */
-      VFSError(err, stringExportDb);
-      VFSFileDelete(VFSVolume[dst]->volId, gameName);
-      VFSFileDelete(VFSVolume[dst]->volId, stateName);
-      return;
-    }
-
-    /* everything seems to be fine, remove state database from handheld */
-    DmDeleteDatabase(src->cardNo, dbIdState);
-  }
-
-  /* everything seems to be fine, remove game database from handheld */
-  DmDeleteDatabase(src->cardNo, dbIdGame);
-
-  /* reflect change in list */
-  ManagerListChangeLocation(dst, 0);
-}
-
-/**
- * Moves from VFS (external) to VFS (external).
- *
- * @param src pointer to the entry in the games list.
- * @param dst destination volume number.
- */
-static void VFSMove_V2V(ManagerDbListEntryType *src, UInt16 dst) {
-  Err  err;
-  Char gameName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char stateName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-
-  /* check if phoinix dir exists */
-  if (!VFSCheckDir(VFSVolume[dst]->volId))
-    return;
-
-  /* build game database file name */
-  StrPrintF(gameName, PHOINIX_DIR "/%s" SUFFIX_PDB, src->name);
-
-  if (VFSFileExists(VFSVolume[dst]->volId, gameName)) {
-    if (FrmAlert(alertIdOverwrite) != 0)
-      return;
-  }
-
-  /* copy the game database itself */
-  if (!VFSCopyFile(stringMoveDb,
-		   VFSVolume[src->volIdx]->volId, gameName,
-		   VFSVolume[dst]->volId,         gameName)) {
-    /* try to delete probably defective destination file */
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-    return;
-  }
-
-  /* build vfs file name of state database */
-  StrPrintF(stateName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	    MemoryMbcInfo.crc);
-
-  /* copy the state database */
-  if (!VFSCopyFile(stringMoveDb,
-		   VFSVolume[src->volIdx]->volId, stateName,
-		   VFSVolume[dst]->volId,         stateName)) {
-    /* erase both new destination files */
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-    VFSFileDelete(VFSVolume[dst]->volId, stateName);
-    return;
-  }
-
-  /* delete original file */
-  if ((err = VFSFileDelete(VFSVolume[src->volIdx]->volId, gameName))
-      != errNone) {
-    VFSError(err, stringMoveDb);
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-    VFSFileDelete(VFSVolume[dst]->volId, stateName);
-    return;
-  }
-
-  /* delete original file */
-  if ((err = VFSFileDelete(VFSVolume[src->volIdx]->volId, stateName))
-      != errNone) {
-    VFSError(err, stringMoveDb);
-    VFSFileDelete(VFSVolume[dst]->volId, gameName);
-    VFSFileDelete(VFSVolume[dst]->volId, stateName);
-    return;
-  }
-
-  /* reflect change in list */
-  ManagerListChangeLocation(dst, 0);
-}
-
-/**
- * Moves from VFS (external) to Palm RAM (internal).
- *
- * @param src pointer to the entry in the games list.
- * @param dst destination volume number.
- */
-static void VFSMove_V2P(ManagerDbListEntryType *src, UInt16 dst) {
-  Err     err;
-  Char    gameName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char    stateName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  UInt16  gameCardNo = 0, stateCardNo = 0;
-  LocalID gameDbId, stateDbId;
-
-  /* close state database if open */
-  StatesClosePrefsAndStates();
-
-  /* erase existing destination file */
-  if ((gameDbId = DmFindDatabase(gameCardNo, src->name)) != 0) {
-    if (FrmAlert(alertIdOverwrite) != 0)
-      return;
-
-    DmDeleteDatabase(gameCardNo, gameDbId);
-  }
-
-  /* build game file name */
-  StrPrintF(gameName, PHOINIX_DIR "/%s" SUFFIX_PDB, src->name);
-
-  /* import game database from card */
-  MiscShowBusy(true);
-  err = VFSImportDatabaseFromFile(VFSVolume[src->volIdx]->volId,
-				  gameName, &gameCardNo, &gameDbId);
-  MiscShowBusy(false);
-  if (err != errNone) {
-    VFSError(err, stringImportDb);
-    return;
-  }
-
-  /* build vfs file name of state database */
-  StrPrintF(stateName, gameStatesDbName, MemoryMbcInfo.crc);
-
-  /* erase existing destination file */
-  if ((stateDbId = DmFindDatabase(gameCardNo, stateName)) != 0)
-    DmDeleteDatabase(gameCardNo, stateDbId);
-
-  /* build vfs file name of state database */
-  StrPrintF(stateName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	    MemoryMbcInfo.crc);
-
-  /* import state database from card */
-  MiscShowBusy(true);
-  err = VFSImportDatabaseFromFile(VFSVolume[src->volIdx]->volId,
-				  stateName, &stateCardNo, &stateDbId);
-  MiscShowBusy(false);
-  if (err != errNone) {
-    VFSError(err, stringImportDb);
-    DmDeleteDatabase(gameCardNo, gameDbId);
-    return;
-  }
-
-  /* delete files in VFS */
-  if ((err = VFSFileDelete(VFSVolume[src->volIdx]->volId, gameName))
-      != errNone)
-    VFSError(err, stringImportDb);
-
-  if ((err = VFSFileDelete(VFSVolume[src->volIdx]->volId, stateName))
-      != errNone)
-    VFSError(err, stringImportDb);
-
-  /* reflect change in list */
-  ManagerListChangeLocation(dst, gameCardNo);
-}
-
-/**
- * Copies the source file into the destination file.
- *
- * @param  err_msg  index of additional string in case of an error.
- * @param  src_vol  source volume number.
- * @param  src_name source filename.
- * @param  dst_vol  destination volume number.
- * @param  dst_name destination filename.
- * @return true if successful.
- */
-static Boolean VFSCopyFile(UInt16 err_msg,
-			   UInt16 src_vol, Char *src_name,
-			   UInt16 dst_vol, Char *dst_name) {
-  FileRef srcFile = -1, dstFile = -1;
-  void    *buffer = NULL;
-  UInt32  bytesread;
-  Err     err = -1;
-  Boolean retVal = false;
-
-  MiscShowBusy(true);
-
-  buffer = MemPtrNew(COPY_CHUNK_SIZE);
-  if (buffer == NULL)
-    goto VFSCopyError;
-
-  /* open source file */
-  if ((err = VFSFileOpen(src_vol, src_name, vfsModeRead, &srcFile)) != errNone)
-    goto VFSCopyError;
-
-  /* open destination file */
-  if ((err = VFSFileOpen(dst_vol, dst_name,
-			 vfsModeWrite | vfsModeCreate | vfsModeTruncate,
-			 &dstFile)) != errNone)
-    goto VFSCopyError;
-
-  /* and now copy the files block by block */
-  while ((err = VFSFileEOF(srcFile)) == errNone) {
-
-    if ((err = VFSFileRead(srcFile, COPY_CHUNK_SIZE, buffer, &bytesread))
-	!= errNone)
-      if (err != vfsErrFileEOF)
-        goto VFSCopyError;
-
-    if ((err = VFSFileWrite(dstFile, bytesread, buffer, NULL)) != errNone)
-      goto VFSCopyError;
-  }
-
-  /* other error than eof? */
-  if (err != vfsErrFileEOF)
-    goto VFSCopyError;
-
-  /* everything went fine */
-  retVal = true;
-
- VFSCopyError:
-  MiscShowBusy(false);
-
-  /* close files and free memory */
-  if (srcFile != -1)
-    VFSFileClose(srcFile);
-  if (dstFile != -1)
-    VFSFileClose(dstFile);
-  if (buffer != NULL)
-    MemPtrFree(buffer);
-
-  /* display error, if there was one */
-  if (retVal == false)
-    VFSError(err, err_msg);
-
-  return retVal;
-}
-
-/* === Support functions for the manager form =========================	*/
-
-/**
- * Fetches the file head in order to calc CRC and get cart infos.
- *
- * @param  game pointer to the entry in the games list.
- * @return handle of the file head record, NULL if error.
- */
-MemHandle VFSFetchHead(ManagerDbListEntryType *game) {
-  Char      dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  FileRef   file;
-  MemHandle recH;
-  Err       err;
-
-  if (VFSVolume == NULL)
-    return NULL;
-
-  /* build complete file name */
-  StrPrintF(dbName, PHOINIX_DIR "/%s" SUFFIX_PDB, game->name);
-
-  /* open file */
-  err = VFSFileOpen(VFSVolume[game->volIdx]->volId,
-		    dbName, vfsModeRead, &file);
-  if (err != errNone) {
-    if (err != vfsErrFileNotFound)
-      VFSError(err, stringFetchHead);
-    return NULL;
-  }
-
-  /* get first record */
-#if SHOW_BUSY_FOR_CRC
-  MiscShowBusy(true);
-#endif
-  err = VFSFileDBGetRecord(file, 0, &recH, NULL, NULL);
-#if SHOW_BUSY_FOR_CRC
-  MiscShowBusy(false);
-#endif
-  if (err != errNone) {
-    VFSError(err, stringFetchHead);
-    recH = NULL;
-  }
-
-  VFSFileClose(file);
-
-  return recH;
-}
-
-/**
- * Import games from the launcher's directory if present.
- *
- * @param vol volume number.
- */
-static void VFSImportFromLauncher(UInt16 vol) {
-  Err          err;
-  UInt32       it;
-  FileRef      dir;
-  FileInfoType info;
-  Char         dbName[4 + dmDBNameLength];    /* {dmDBNameLength}.pdb */
-  Char         cur_name[20 + dmDBNameLength]; /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char         new_name[20 + dmDBNameLength]; /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  FileRef      file;
-  UInt32       type, creator;
-
-  /* open the directory to scan, no real error reporting here, since */
-  /* the directory will be scanned again and errors will be reported */
-  /* then */
-  if ((err=VFSFileOpen(vol, LAUNCHER_DIR, vfsModeRead, &dir)) == errNone) {
-    it = vfsIteratorStart;
-    info.nameBufLen = 4 + dmDBNameLength;
-    info.nameP = dbName;
-
-    while (it != vfsIteratorStop) {
-      if (VFSDirEntryEnumerate(dir, &it, &info) != errNone)
+  UInt32 iterator;
+  UInt16 volRefNum;
+  UInt16 volIndex;
+
+  /* get name of Palm RAM, caution with the size of the name entry */
+  MemCardInfo(ramGameDbCardNo, VolumePalmRam.name, NULL, NULL, NULL, NULL,
+	      NULL, NULL);
+
+  /* Palm RAM always exists and counts as a volume until categories are
+   * implemented.
+   */
+  VfsNumberOfVolumes = 1;
+  VfsVolume = &VolumeFallback;
+
+  /* determine number of volumes */
+  if (FtrGet(sysFileCVFSMgr, vfsFtrIDVersion, &vfsMgrVersion)
+      == errNone) {
+    UInt32 iterator;
+    UInt16 volRefNum;
+
+    iterator = vfsIteratorStart;
+    while (iterator != vfsIteratorStop) {
+      if (VFSVolumeEnumerate(&volRefNum, &iterator) != errNone) {
 	break;
-
-      /* is this a .pdb or .PDB name? */
-      if (StrCaselessCompare(SUFFIX_PDB, &info.nameP[StrLen(info.nameP) - 4]) == 0) {
-	/* attach file name to path */
-	StrPrintF(cur_name, LAUNCHER_DIR "/%s", info.nameP);
-	StrPrintF(new_name, PHOINIX_DIR  "/%s", info.nameP);
-
-	/* check whether this really is a game database */
-	if (VFSFileOpen(vol, cur_name, vfsModeRead, &file) == errNone) {
-	  Err err;
-	  /* fetch name, type and creator */
-	  err = VFSFileDBInfo(file, NULL, NULL, NULL, NULL,
-			      NULL, NULL, NULL, NULL, NULL,
-			      &type, &creator, NULL);
-	  VFSFileClose(file);
-	  if (err == errNone) {
-	    /* verify creator and type */
-	    if ((creator == miscCreator) && (type == gameDbType)) {
-	      /* verify that phoinix dir exists */
-	      if (VFSCheckDir(vol)) {
-		/* ok, move this file */
-		if (!VFSCopyFile(-1, vol, cur_name, vol, new_name)) {
-		  /* copying failed, try to delete new file */
-		  VFSFileDelete(vol, new_name);
-		} else {
-		  /* copying successful, try to delete old file */
-		  VFSFileDelete(vol, cur_name);
-		  it = vfsIteratorStart;
-		}
-	      }
-	    }
-	  }
-	}
       }
+
+      VfsNumberOfVolumes++;
     }
-    /* finally close the directory */
-    VFSFileClose(dir);
+  }
+
+  /* if no VFS volumes found, quit */
+  if (VfsNumberOfVolumes == 1) {
+    return true;
+  }
+
+  /* allocate volume list */
+  VfsVolume = MemPtrNew((sizeof(VfsVolumeType*) + sizeof(VfsVolumeType))
+			* VfsNumberOfVolumes);
+  if (VfsVolume == NULL) {
+    VfsNumberOfVolumes = 1;
+    VfsVolume = &VolumeFallback;
+    return false;
+  }
+
+  /* first entry is Palm RAM, allocated memory is unused */
+#if vfsRamVolIndex != 0
+#error "vfsRamVolIndex must be 0!"
+#endif
+  VfsVolume[vfsRamVolIndex] = &VolumePalmRam;
+
+  /* get the volume names */
+  volIndex = vfsRamVolIndex;
+  iterator = vfsIteratorStart;
+  while (iterator != vfsIteratorStop) {
+    if (VFSVolumeEnumerate(&volRefNum, &iterator) != errNone) {
+      break;
+    }
+
+    volIndex++;
+    VfsVolume[volIndex] =
+      (VfsVolumeType*)(VfsVolume + VfsNumberOfVolumes) + volIndex;
+    VFSVolumeGetLabel(volRefNum, VfsVolume[volIndex]->name,
+		      vfsVolNameLength);
+    if (VfsVolume[volIndex]->name[0] == '\0') {
+      StrPrintF(VfsVolume[volIndex]->name, "Volume %d", volIndex);
+    }
+    VfsVolume[volIndex]->volRefNum = volRefNum;
+  }
+
+  return true;
+}
+
+/**
+ * Finds the volume index for a volume name.
+ *
+ * @param name volume name.
+ * @return     volume index, vfsRamVolIndex on error.
+ */
+UInt16 VfsFindVolIndex(const Char *name) {
+  UInt16 volume;
+
+  for (volume = vfsRamVolIndex; volume < VfsNumberOfVolumes; volume++) {
+    if (StrCompare(VfsVolume[volume]->name, name) == 0) {
+      return volume;
+    }
+  }
+  return vfsRamVolIndex;
+}
+
+/**
+ * Release all used resources.
+ */
+void VfsExit(void) {
+  if (VfsVolume != &VolumeFallback) {
+    MemPtrFree(VfsVolume);
   }
 }
 
 /* === Scanning VFS volumes ===========================================	*/
 
 /**
- * Checks a file name for correctness and duplicate.
+ * Scans volumes for game databases, importing new games from the
+ * Launcher directory. Only the last error is reported.
  *
- * @param  vol   volume number.
- * @param  name1 pointer to buffer for database generated name.
- * @param  name2 pointer to buffer for actual file name.
- * @return true if no error and name is OK.
+ * @return error code from misc.h, miscErrNone if successful.
  */
-static Boolean VFSGetMissnamed(UInt16 vol, char *name1, char *name2) {
-  Err          err;
-  UInt32       it;
-  FileRef      dir;
-  FileInfoType info;
-  Char         dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  FileRef      file;
-  UInt32       type, creator;
+MiscErrorType VfsScanForGames(void) {
+  MiscErrorType err = miscErrNone;
+  UInt16        volume;
 
-  /* open the directory to scan, no real error reporting here, since */
-  /* the directory will be scanned again and errors will be reported */
-  /* then */
-  if ((err=VFSFileOpen(vol, PHOINIX_DIR, vfsModeRead, &dir)) == errNone) {
-    it = vfsIteratorStart;
-    info.nameBufLen = 20 + dmDBNameLength;
-    info.nameP = dbName;
+  for (volume = vfsRamVolIndex + 1;
+       volume < VfsNumberOfVolumes;
+       volume++) {
+    FileRef dir;
+    Err     vfsErr;
 
-    while (it != vfsIteratorStop) {
-      if (VFSDirEntryEnumerate(dir, &it, &info) != errNone)
-	break;
+    if (!ImportFromLauncherDir(VfsVolume[volume]->volRefNum)) {
+      err = miscErrImport;
+    }
 
-      /* is this a .pdb or .PDB name? */
-      if (StrCaselessCompare(SUFFIX_PDB, &info.nameP[StrLen(info.nameP) - 4]) == 0) {
-	/* attach file name to path */
-	StrCopy(name2, PHOINIX_DIR "/");
-	StrCat(name2, info.nameP);
+    vfsErr = VFSFileOpen(VfsVolume[volume]->volRefNum, phoinixDirName,
+			 vfsModeRead, &dir);
+    if (vfsErr != errNone) {
+      if (vfsErr != vfsErrFileNotFound) {
+	err = miscErrSearchVfs;
+      }
 
-	/* check whether this really is a game database */
-	if (VFSFileOpen(vol, name2, vfsModeRead, &file) == errNone) {
-	  /* fetch name, type and creator */
-	  if (VFSFileDBInfo(file, name2, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, NULL,
-			    &type, &creator, NULL) == errNone) {
-	    /* verify creator and type */
-	    if ((creator == miscCreator) && (type == gameDbType)) {
-	      /* check whether filename and internal database */
-	      /* name match and ignore the file if they */
-	      /* do not match */
-	      StrCat(name2, SUFFIX_PDB);
-	      if (StrCompare(name2, dbName) != 0) {
-		/* return internal and real file name */
-		StrPrintF(name1, PHOINIX_DIR "/%s", info.nameP );
-		VFSFileClose(file);
+    } else {
+      UInt32       iterator;
+      FileInfoType info;
+      Char         fileName[fileNameLength];
+
+      info.nameP = fileName;
+      info.nameBufLen = sizeof(fileName);
+
+      /* scan all entries of the Phoinix directory,
+       * checking for the correct name length, suffix, creator, and type,
+       * if OK: add to the games list
+       */
+      for (iterator = vfsIteratorStart;
+	   iterator != vfsIteratorStop
+	     && VFSDirEntryEnumerate(dir, &iterator, &info) == errNone;
+	   /**/) {
+	if (StrLen(fileName) - pdbSuffixNameLength < dmDBNameLength &&
+	    StrCompare(
+	      fileName + StrLen(fileName) - pdbSuffixNameLength,
+	      pdbSuffixName) == 0) {
+	  Char    fullFileName[phoinixDirFileNameLength];
+	  FileRef file;
+
+	  StrCopy(fullFileName, phoinixDirName);
+	  StrCat(fullFileName, "/");
+	  StrCat(fullFileName, fileName);
+	  if (VFSFileOpen(VfsVolume[volume]->volRefNum, fullFileName,
+			  vfsModeRead, &file) != errNone) {
+	    err = miscErrSearchVfs;
+
+	  } else {
+	    UInt32 type, creator;
+
+	    vfsErr = VFSFileDBInfo(file, NULL, NULL, NULL, NULL, NULL,
+				   NULL, NULL, NULL, NULL, &type,
+				   &creator, NULL);
+	    VFSFileClose(file);
+	    if (vfsErr != errNone) {
+	      err = miscErrSearchVfs;
+
+	    } else if (creator == miscCreator && type == miscGameDbType) {
+	      /* OK, it's a game, let's add it with its filename! */
+	      fileName[StrLen(fileName) - pdbSuffixNameLength] = '\0';
+	      if (!ManagerListAdd(fileName, volume)) {
 		VFSFileClose(dir);
-		return true;
+		return miscErrMemoryFull;
 	      }
 	    }
 	  }
-	  /* and close the database again */
+	}
+      }
+      VFSFileClose(dir);
+    }
+  }
+  return err;
+}
+
+/**
+ * Import games from the Launcher directory into Phoinix directory. The
+ * new filename is derived from the database name. Only the last error is
+ * reported.
+ *
+ * @param volRefNum volume reference.
+ * @return          true if successful.
+ */
+static Boolean ImportFromLauncherDir(UInt16 volRefNum) {
+  Boolean ok = true;
+  FileRef dir;
+
+  if (VFSFileOpen(volRefNum, launcherDirName, vfsModeRead, &dir)
+      == errNone) {
+    UInt32       iterator;
+    FileInfoType info;
+    Char         fileName[fileNameLength];
+
+    info.nameP = fileName;
+    info.nameBufLen = sizeof(fileName);
+
+    /* scan all entries of the Launcher directory,
+     * checking for the correct suffix, creator, and type,
+     * if OK: try to copy, on success delete the source
+     */
+    for (iterator = vfsIteratorStart;
+	 iterator != vfsIteratorStop
+	   && VFSDirEntryEnumerate(dir, &iterator, &info) == errNone;
+	 /**/) {
+      if (StrCaselessCompare(
+	    fileName + StrLen(fileName) - pdbSuffixNameLength,
+	    pdbSuffixName) == 0) {
+	Char    oldFileName[launcherDirFileNameLength];
+	FileRef file;
+
+	StrCopy(oldFileName, launcherDirName);
+	StrCat(oldFileName, "/");
+	StrCat(oldFileName, fileName);
+	if (VFSFileOpen(volRefNum, oldFileName, vfsModeRead, &file)
+	    == errNone) {
+	  Char   dbName[dmDBNameLength];
+	  UInt32 type, creator;
+	  Err    err;
+
+	  err = VFSFileDBInfo(file, dbName, NULL, NULL, NULL, NULL, NULL,
+			      NULL, NULL, NULL, &type, &creator, NULL);
 	  VFSFileClose(file);
+	  if (err == errNone
+	      && creator == miscCreator && type == miscGameDbType) {
+	    /* OK, it's a game, let's move it! */
+	    if (!ProvidePhoinixDir(volRefNum)) {
+	      ok = false;
+	    } else {
+	      Char newFileName[phoinixDirFileNameLength];
+
+	      StrPrintF(newFileName, phoinixDirName  "/%s" pdbSuffixName,
+			dbName);
+	      if (FileExists(volRefNum, newFileName)) {
+		ok = false;
+	      } else {
+		if (CopyFile(volRefNum, oldFileName, volRefNum,
+			     newFileName) != miscErrNone) {
+		  ok = false;
+		} else {
+		  (void)VFSFileDelete(volRefNum, oldFileName);
+		  /* since we changed the contents of the directory, the
+		   * iteration has to start over again
+		   */
+		  iterator = vfsIteratorStart;
+		}
+	      }
+	    }
+	  }
 	}
       }
     }
-    /* finally close the directory */
     VFSFileClose(dir);
   }
+  return ok;
+}
+
+/* === Moving games between different media ===========================	*/
+
+/**
+ * Moves the game into the given destination.
+ *
+ * @param gameP       pointer to the game's entry.
+ * @param newVolIndex destination volume number.
+ * @return            error code from misc.h, miscErrNone if successful.
+ */
+MiscErrorType VfsMove(const ManagerDbListEntryType *gameP,
+		      UInt16 newVolIndex) {
+  if (gameP->volIndex == vfsRamVolIndex) {
+    return MoveRamToVfs(gameP, newVolIndex);
+  } else if (newVolIndex == vfsRamVolIndex) {
+    return MoveVfsToRam(gameP);
+  } else {
+    return MoveVfsToVfs(gameP, newVolIndex);
+  }
+}
+
+/**
+ * Moves the game from Palm RAM to VFS.
+ *
+ * @param gameP       pointer to the game's entry.
+ * @param newVolIndex destination volume number.
+ * @return            error code from misc.h, miscErrNone if successful.
+ */
+static MiscErrorType MoveRamToVfs(const ManagerDbListEntryType *gameP,
+				  UInt16 newVolIndex) {
+  Char          gameFileName[phoinixDirFileNameLength];
+  Char          stateDbName[dmDBNameLength];
+  Char          stateFileName[phoinixDirFileNameLength];
+  LocalID       dbIdGame, dbIdState;
+  UInt16        newVolRefNum;
+  Err           vfsErr;
+  MiscErrorType err;
+
+  if (!ProvidePhoinixDir(VfsVolume[newVolIndex]->volRefNum)) {
+    return miscErrNoPhoinixDir;
+  }
+
+  StrPrintF(gameFileName, phoinixDirName "/%s" pdbSuffixName,
+	    gameP->name);
+  StrPrintF(stateDbName, statesDbNameFormat, gameP->crc);
+  StrPrintF(stateFileName, phoinixDirName "/%s" pdbSuffixName,
+	    stateDbName);
+
+  dbIdGame = DmFindDatabase(ramGameDbCardNo, gameP->name);
+  dbIdState = DmFindDatabase(ramStatesDbCardNo, stateDbName);
+  if (dbIdGame == 0) {
+    return miscErrFileNotFound;
+  }
+
+  newVolRefNum = VfsVolume[newVolIndex]->volRefNum;
+
+  /* if the destination exists, ask for confirmation to overwrite */
+  if (FileExists(newVolRefNum, gameFileName)) {
+    if (FrmCustomAlert(alertIdOverwrite, gameP->name,
+		       VfsVolume[newVolIndex]->name, NULL) != 0) {
+      return miscErrNone;
+    }
+    if (VFSFileDelete(newVolRefNum, gameFileName) != errNone) {
+      return miscErrVfsReadOnly;
+    }
+  }
+  if (FileExists(newVolRefNum, stateFileName)) {
+    if (VFSFileDelete(newVolRefNum, stateFileName) != errNone) {
+      return miscErrVfsReadOnly;
+    }
+  }
+
+  MiscShowBusy(true);
+
+  vfsErr =VFSExportDatabaseToFile(newVolRefNum, gameFileName,
+				  ramGameDbCardNo, dbIdGame);
+  if (vfsErr == errNone && dbIdState != 0) {
+    vfsErr = VFSExportDatabaseToFile(newVolRefNum, stateFileName,
+				     ramStatesDbCardNo, dbIdState);
+    if (vfsErr != errNone) {
+      (void)VFSFileDelete(newVolRefNum, stateFileName);
+    }
+  }
+
+  MiscShowBusy(false);
+
+  if (vfsErr != errNone) {
+    (void)VFSFileDelete(newVolRefNum, gameFileName);
+    if (vfsErr == vfsErrVolumeFull) {
+      return miscErrVolumeFull;
+    } else {
+      return miscErrWrite;
+    }
+  }
+
+  /* everything seems to be fine, delete origin */
+  ManagerListSetLocation(newVolIndex);
+  err = miscErrNone;
+  if (DmDeleteDatabase(ramGameDbCardNo, dbIdGame) != errNone) {
+    err = miscErrRamReadOnly;
+  }
+  if (dbIdState != 0) {
+    if (DmDeleteDatabase(ramStatesDbCardNo, dbIdState) != errNone) {
+      err = miscErrRamReadOnly;
+    }
+  }
+  return err;
+}
+
+/**
+ * Moves the game from VFS to Palm RAM.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      error code from misc.h, miscErrNone if successful.
+ */
+static MiscErrorType MoveVfsToRam(const ManagerDbListEntryType *gameP) {
+  Char          gameFileName[phoinixDirFileNameLength];
+  Char          stateDbName[dmDBNameLength];
+  Char          stateFileName[phoinixDirFileNameLength];
+  UInt16        gameCardNo, stateCardNo;
+  LocalID       gameDbId, stateDbId;
+  UInt16        oldVolRefNum;
+  Err           vfsErr;
+  MiscErrorType err;
+
+  StrPrintF(gameFileName, phoinixDirName "/%s" pdbSuffixName,
+	    gameP->name);
+  StrPrintF(stateDbName, statesDbNameFormat, gameP->crc);
+  StrPrintF(stateFileName, phoinixDirName "/%s" pdbSuffixName,
+	    stateDbName);
+
+  /* if the destination exists, ask for confirmation to overwrite */
+  gameDbId = DmFindDatabase(ramGameDbCardNo, gameP->name);
+  if (gameDbId != 0) {
+    if (FrmCustomAlert(alertIdOverwrite, gameP->name, VolumePalmRam.name,
+		       NULL) != 0) {
+      return miscErrNone;
+    }
+    if (DmDeleteDatabase(ramGameDbCardNo, gameDbId) != errNone) {
+      return miscErrRamReadOnly;
+    }
+  }
+  stateDbId = DmFindDatabase(ramStatesDbCardNo, stateDbName);
+  if (stateDbId != 0) {
+    if (DmDeleteDatabase(ramStatesDbCardNo, stateDbId) != errNone) {
+      return miscErrRamReadOnly;
+    }
+  }
+
+  MiscShowBusy(true);
+
+  oldVolRefNum = VfsVolume[gameP->volIndex]->volRefNum;
+
+  vfsErr = VFSImportDatabaseFromFile(oldVolRefNum, gameFileName,
+				     &gameCardNo, &gameDbId);
+  if (vfsErr == errNone) {
+    if (gameCardNo != ramGameDbCardNo) {
+      vfsErr = dmErrMemError;
+    } else {
+      vfsErr = VFSImportDatabaseFromFile(oldVolRefNum, stateFileName,
+					 &stateCardNo, &stateDbId);
+      if (vfsErr == errNone) {
+	if (stateCardNo != ramStatesDbCardNo) {
+	  vfsErr = dmErrMemError;
+	}
+      }
+      if (vfsErr == vfsErrFileNotFound) {
+	vfsErr = errNone;
+      } else if (vfsErr != errNone) {
+	(void)DmDeleteDatabase(stateCardNo, stateDbId);
+      }
+    }
+  }
+
+  MiscShowBusy(false);
+
+  if (vfsErr != errNone) {
+    (void)DmDeleteDatabase(gameCardNo, gameDbId);
+    if (vfsErr == dmErrMemError) {
+      return miscErrMemoryFull;
+    } else {
+      return miscErrWrite;
+    }
+  }
+
+  /* everything seems to be fine, delete origin */
+  ManagerListSetLocation(vfsRamVolIndex);
+  err = miscErrNone;
+  if (VFSFileDelete(oldVolRefNum, gameFileName) != errNone) {
+    err = miscErrVfsReadOnly;
+  }
+  if (FileExists(oldVolRefNum, stateFileName)) {
+    if (VFSFileDelete(oldVolRefNum, stateFileName) != errNone) {
+      err = miscErrVfsReadOnly;
+    }
+  }
+  return err;
+}
+
+/**
+ * Moves the game from VFS to VFS.
+ *
+ * @param gameP       pointer to the game's entry.
+ * @param newVolIndex destination volume number.
+ * @return            error code from misc.h, miscErrNone if successful.
+ */
+static MiscErrorType MoveVfsToVfs(const ManagerDbListEntryType *gameP,
+				  UInt16 newVolIndex) {
+  Char          gameFileName[phoinixDirFileNameLength];
+  Char          stateFileName[phoinixDirFileNameLength];
+  UInt16        oldVolRefNum, newVolRefNum;
+  MiscErrorType err;
+
+  if (!ProvidePhoinixDir(VfsVolume[newVolIndex]->volRefNum)) {
+    return miscErrNoPhoinixDir;
+  }
+
+  StrPrintF(gameFileName, phoinixDirName "/%s" pdbSuffixName,
+	    gameP->name);
+  StrPrintF(stateFileName,
+	    phoinixDirName "/" statesDbNameFormat pdbSuffixName,
+	    gameP->crc);
+
+  oldVolRefNum = VfsVolume[gameP->volIndex]->volRefNum;
+  newVolRefNum = VfsVolume[newVolIndex]->volRefNum;
+
+  /* if the destination exists, ask for confirmation to overwrite */
+  if (FileExists(newVolRefNum, gameFileName)) {
+    if (FrmCustomAlert(alertIdOverwrite, gameP->name,
+		       VfsVolume[newVolIndex]->name, NULL) != 0) {
+      return miscErrNone;
+    }
+    if (VFSFileDelete(newVolRefNum, gameFileName) != errNone) {
+      return miscErrVfsReadOnly;
+    }
+  }
+  if (FileExists(newVolRefNum, stateFileName)) {
+    if (VFSFileDelete(newVolRefNum, stateFileName) != errNone) {
+      return miscErrVfsReadOnly;
+    }
+  }
+
+  MiscShowBusy(true);
+
+  err = CopyFile(oldVolRefNum, gameFileName, newVolRefNum, gameFileName);
+  if (err == miscErrNone) {
+    err = CopyFile(oldVolRefNum, stateFileName, newVolRefNum,
+		   stateFileName);
+    if (err == miscErrFileNotFound) {
+      err = miscErrNone;
+    }
+  }
+
+  MiscShowBusy(false);
+
+  if (err != miscErrNone) {
+    return err;
+  }
+
+  /* everything seems to be fine, delete origin */
+  ManagerListSetLocation(newVolIndex);
+  err = miscErrNone;
+  if (VFSFileDelete(oldVolRefNum, gameFileName) != errNone) {
+    err = miscErrVfsReadOnly;
+  }
+  if (FileExists(oldVolRefNum, stateFileName)) {
+    if (VFSFileDelete(oldVolRefNum, stateFileName) != errNone) {
+      err = miscErrVfsReadOnly;
+    }
+  }
+  return err;
+}
+
+/**
+ * Copies the source file into the destination file.
+ *
+ * @param srcVolRefNum source volume number.
+ * @param srcFileName  source filename.
+ * @param dstVolRefNum destination volume number.
+ * @param dstFileName  destination filename.
+ * @return             error code from misc.h, miscErrNone if successful.
+ */
+static MiscErrorType CopyFile(
+  UInt16 srcVolRefNum, const Char *srcFileName,
+  UInt16 dstVolRefNum, const Char *dstFileName) {
+  MiscErrorType err = miscErrNone;
+  void          *buffer;
+
+  buffer = MemPtrNew(copyChunkSize);
+  if (buffer == NULL) {
+    err = miscErrMemoryFull;
+
+  } else {
+    FileRef srcFile;
+
+    if (VFSFileOpen(srcVolRefNum, srcFileName, vfsModeRead, &srcFile)
+	!= errNone) {
+      err = miscErrFileNotFound;
+
+    } else {
+      Err     vfsErr;
+      FileRef dstFile;
+
+      vfsErr = VFSFileOpen(dstVolRefNum, dstFileName,
+			   vfsModeWrite | vfsModeCreate | vfsModeTruncate,
+			   &dstFile);
+      if (vfsErr == vfsErrBadName || vfsErr == vfsErrDirectoryNotFound) {
+	err = miscErrBadName;
+      } else if (vfsErr != errNone) {
+	err = miscErrVfsReadOnly;
+
+      } else {
+	UInt32 numberOfBytes;
+
+	/* here the copying takes place: */
+	for (;;) {
+	  vfsErr = VFSFileRead(srcFile, copyChunkSize, buffer,
+			       &numberOfBytes);
+	  if (vfsErr != errNone && vfsErr != vfsErrFileEOF) {
+	    err = miscErrRead;
+	    break;
+	  }
+	  if (numberOfBytes == 0) {
+	    break;
+	  }
+
+	  vfsErr = VFSFileWrite(dstFile, numberOfBytes, buffer, NULL);
+	  if (vfsErr == vfsErrVolumeFull) {
+	    err = miscErrVolumeFull;
+	    break;
+	  } else if (vfsErr != errNone) {
+	    err = miscErrWrite;
+	    break;
+	  }
+	}
+
+	vfsErr = VFSFileClose(dstFile);
+	if (err == miscErrNone) {
+	  if (vfsErr == vfsErrVolumeFull) {
+	    err = miscErrVolumeFull;
+	  } else if (vfsErr != errNone) {
+	    err = miscErrWrite;
+	  }
+	}
+	if (err != miscErrNone) {
+	  (void)VFSFileDelete(dstVolRefNum, dstFileName);
+	}
+      }
+      VFSFileClose(srcFile);
+    }
+    MemPtrFree(buffer);
+  }
+  return err;
+}
+
+/* === Support functions for the manager form =========================	*/
+
+/**
+ * Fetches the first block of the game in order to obtain CRC and
+ * cartridge infos.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      handle of the block, NULL if error.
+ */
+MemHandle VfsGetFirstBlock(const ManagerDbListEntryType *gameP) {
+  Char      fileName[phoinixDirFileNameLength];
+  FileRef   file;
+  MemHandle recH;
+
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, gameP->name);
+
+  if (VFSFileOpen(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		  vfsModeRead, &file) != errNone) {
+    return NULL;
+  }
+  if (VFSFileDBGetRecord(file, 0, &recH, NULL, NULL) != errNone) {
+    if (recH != NULL) {
+      MemHandleFree(recH);
+      recH = NULL;
+    }
+  }
+  VFSFileClose(file);
+
+  return recH;
+}
+
+/**
+ * Retrieves the total size of both the game and the states database.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      size in bytes, 0 on error.
+ */
+UInt32 VfsTotalSize(const ManagerDbListEntryType *gameP) {
+  UInt32  sizeGame, sizeStates;
+  Err     err;
+  Char    fileName[phoinixDirFileNameLength];
+  FileRef file;
+
+  /* the game has to exist */
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, gameP->name);
+  if (VFSFileOpen(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		  vfsModeRead, &file) != errNone) {
+    return 0;
+  }
+  err = VFSFileSize(file, &sizeGame);
+  VFSFileClose(file);
+  if (err != errNone) {
+    return 0;
+  }
+
+  /* the states database doesn't have to exist */
+  sizeStates = 0;
+  StrPrintF(fileName, phoinixDirName "/" statesDbNameFormat pdbSuffixName,
+	    gameP->crc);
+  if (VFSFileOpen(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		  vfsModeRead, &file) == errNone) {
+    err = VFSFileSize(file, &sizeStates);
+    VFSFileClose(file);
+    if (err != errNone) {
+      return 0;
+    }
+  }
+
+  return sizeGame + sizeStates;
+}
+
+/**
+ * Rename the game.
+ *
+ * @param gameP pointer to the game's entry.
+ * @param name  pointer to the new name.
+ * @return      error code from misc.h, miscErrNone if successful.
+ */
+MiscErrorType VfsRenameGame(const ManagerDbListEntryType *gameP,
+			    const Char *name) {
+  Char    fileName[phoinixDirFileNameLength];
+  FileRef file;
+  Char    newName[dmDBNameLength + pdbSuffixNameLength];
+  Err     err;
+
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, name);
+  if (FileExists(VfsVolume[gameP->volIndex]->volRefNum, fileName)) {
+    return miscErrAlreadyExists;
+  }
+
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, gameP->name);
+
+  /* rename the database in the file */
+  if (VFSFileOpen(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		  vfsModeReadWrite, &file) != errNone) {
+    return miscErrVfsReadOnly;
+  }
+  err = VFSFileSeek(file, vfsOriginBeginning,
+		    OffsetOf(DatabaseHdrType, name));
+  if (err == errNone) {
+    err = VFSFileWrite(file, dmDBNameLength, name, NULL);
+  }
+  (void)VFSFileClose(file);
+  if (err != errNone) {
+    return miscErrWrite;
+  }
+
+  /* rename the file, on error try to restore the old database name */
+  StrPrintF(newName, "%s" pdbSuffixName, name);
+  err = VFSFileRename(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		      newName);
+  if (err != errNone) {
+    if (VFSFileOpen(VfsVolume[gameP->volIndex]->volRefNum, fileName,
+		    vfsModeReadWrite, &file) == errNone) {
+      if (VFSFileSeek(file, vfsOriginBeginning,
+		      OffsetOf(DatabaseHdrType, name)) == errNone) {
+	(void)VFSFileWrite(file, dmDBNameLength, gameP->name, NULL);
+      }
+      VFSFileClose(file);
+    }
+    return miscErrBadName;
+  }
+
+  return miscErrNone;
+}
+
+/**
+ * Delete the game.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      error code from misc.h, miscErrNone if successful.
+ */
+MiscErrorType VfsDeleteGame(const ManagerDbListEntryType *gameP) {
+  Char fileName[phoinixDirFileNameLength];
+
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, gameP->name);
+  if (VFSFileDelete(VfsVolume[gameP->volIndex]->volRefNum, fileName)
+      != errNone) {
+    return miscErrVfsReadOnly;
+  }
+
+  return miscErrNone;
+}
+
+/**
+ * Delete the states. Errors are silently ignored.
+ *
+ * @param gameP pointer to the game's entry.
+ */
+void VfsDeleteStates(const ManagerDbListEntryType *gameP) {
+  Char fileName[phoinixDirFileNameLength];
+
+  StrPrintF(fileName, phoinixDirName "/" statesDbNameFormat pdbSuffixName,
+	    gameP->crc);
+  (void)VFSFileDelete(VfsVolume[gameP->volIndex]->volRefNum, fileName);
+}
+
+/* === Open and close games ===========================================	*/
+
+/**
+ * Copy the game to Palm RAM and open it.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      reference to open database, NULL on error.
+ */
+DmOpenRef VfsGameDbOpen(const ManagerDbListEntryType *gameP) {
+  Char    fileName[phoinixDirFileNameLength];
+  UInt16  cardNo;
+  LocalID dbId;
+
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, gameP->name);
+  if (VFSImportDatabaseFromFile(VfsVolume[gameP->volIndex]->volRefNum,
+				fileName, &cardNo, &dbId) == errNone) {
+    if (cardNo == ramGameDbCardNo) {
+      DmOpenRef dbP;
+
+      dbP = DmOpenDatabase(cardNo, dbId, dmModeReadOnly);
+      if (dbP != NULL) {
+	return dbP;
+      }
+    }
+    (void)DmDeleteDatabase(cardNo, dbId);
+  }
+  return NULL;
+}
+
+/**
+ * Close the game. Since the game was loaded from VFS, the database is
+ * simply deleted.
+ *
+ * @param dbP reference to open database.
+ */
+void VfsGameDbClose(DmOpenRef dbP) {
+  LocalID dbId;
+  UInt16  cardNo;
+
+  DmOpenDatabaseInfo(dbP, &dbId, NULL, NULL, &cardNo, NULL);
+  DmCloseDatabase(dbP);
+  if (dbId != 0) {
+    DmDeleteDatabase(cardNo, dbId);
+  }
+}
+
+/* === Open and close states ==========================================	*/
+
+/**
+ * Copy the states to Palm RAM and open it.
+ *
+ * @param gameP pointer to the game's entry.
+ * @return      reference to open database, NULL on error.
+ */
+DmOpenRef VfsStatesDbOpen(const ManagerDbListEntryType *gameP) {
+  Char    dbName[dmDBNameLength];
+  Char    fileName[phoinixDirFileNameLength];
+  LocalID dbId;
+  UInt16  cardNo;
+
+  StrPrintF(dbName, statesDbNameFormat, gameP->crc);
+  StrPrintF(fileName, phoinixDirName "/%s" pdbSuffixName, dbName);
+
+  if (!FileExists(VfsVolume[gameP->volIndex]->volRefNum, fileName)) {
+    return NULL;
+  }
+
+  dbId = DmFindDatabase(ramStatesDbCardNo, dbName);
+  if (dbId != 0) {
+    (void)DmDeleteDatabase(ramStatesDbCardNo, dbId);
+  }
+
+  if (VFSImportDatabaseFromFile(VfsVolume[gameP->volIndex]->volRefNum,
+				fileName, &cardNo, &dbId) == errNone) {
+    if (cardNo == ramStatesDbCardNo) {
+      DmOpenRef dbP;
+
+      dbP = DmOpenDatabase(cardNo, dbId, dmModeReadWrite);
+      if (dbP != NULL) {
+	return dbP;
+      }
+    }
+    (void)DmDeleteDatabase(cardNo, dbId);
+  }
+  MiscShowError(miscErrVfs, miscErrNewState, NULL);
+  return NULL;
+}
+
+/**
+ * Close states. Since the states were loaded from VFS, the database may
+ * have to be written back to the VFS. In any case the local copy is
+ * deleted.
+ *
+ * @param dbP   reference to open database.
+ * @param gameP pointer to the game's entry.
+ * @param save  if true, write database back to VFS.
+ * @return      true if successful.
+ */
+Boolean VfsStatesDbClose(DmOpenRef dbP,
+			 const ManagerDbListEntryType *gameP,
+			 Boolean save) {
+  LocalID dbId;
+  UInt16  cardNo;
+
+  DmOpenDatabaseInfo(dbP, &dbId, NULL, NULL, &cardNo, NULL);
+  DmCloseDatabase(dbP);
+  if (dbId == 0) {
+    return false;
+  }
+
+  if (save) {
+    Char fileName[phoinixDirFileNameLength];
+
+    StrPrintF(fileName,
+	      phoinixDirName "/" statesDbNameFormat pdbSuffixName,
+	      gameP->crc);
+    if (FileExists(VfsVolume[gameP->volIndex]->volRefNum, fileName)) {
+      (void)VFSFileDelete(VfsVolume[gameP->volIndex]->volRefNum,
+			  fileName);
+    }
+    if (VFSExportDatabaseToFile(VfsVolume[gameP->volIndex]->volRefNum,
+				fileName, cardNo, dbId) != errNone) {
+      return false;
+    }
+  }
+  DmDeleteDatabase(cardNo, dbId);
+  return true;
+}
+
+/* === General support functions ======================================	*/
+
+/**
+ * Checks for Phoinix directory, creates it if necessary.
+ *
+ * @param volRefNum volume reference.
+ * @return          true if directory exists.
+ */
+static Boolean ProvidePhoinixDir(UInt16 volRefNum) {
+  FileRef dir;
+
+  if (VFSFileOpen(
+	volRefNum, phoinixDirName, vfsModeRead, &dir) == errNone) {
+    VFSFileClose(dir);
+    return true;
+  }
+
+  if (VFSDirCreate(volRefNum, phoinixDirName) == errNone) {
+    return true;
+  }
+
   return false;
 }
 
 /**
- * Checks for miss-named files and files in the launcher dir.
+ * Checks for an existing file of the given name.
  *
- * @param  vol volume number.
+ * @param volRefNum volume reference.
+ * @param name      pointer to the filename.
+ * @return          true if file exists.
  */
-static void VFSPreScanVolume(UInt16 vol) {
-  Char name1[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char name2[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Err  err;
-
-  /* import games from the launcher dir */
-  VFSImportFromLauncher(vol);
-
-  /* rename miss named games */
-  while (VFSGetMissnamed(vol, name1, name2)) {
-    if ((err = VFSFileRename(vol, name1, name2)) != errNone) {
-      VFSFileDelete(vol, name1);
-      VFSError(err, stringScanForGames);
-    }
-  }
-}
-
-/**
- * Scans volumes for game databases.
- * The busy form is shown by the caller.
- *
- * @param  ListDbP pointer to database of games list.
- * @return true if successful.
- */
-Boolean VFSScanForGames(DmOpenRef ListDbP) {
-  UInt16       volume;
-  FileRef      dir;
-  Err          err;
-  UInt32       it;
-  FileInfoType info;
-  Char         dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char         fileName[20 + dmDBNameLength];
-  FileRef      file;
-  UInt32       type, creator;
-
-  /* no volumes installed, just return */
-  if (VFSVolume == NULL)
-    return true;
-
-  /* scan all volumes */
-  for (volume = 1; volume < VFSPresent; volume++) {
-    /* check for miss-named files and files in the launcher dir */
-    VFSPreScanVolume(VFSVolume[volume]->volId);
-
-    /* open the directory to scan */
-    if ((err=VFSFileOpen(VFSVolume[volume]->volId, PHOINIX_DIR,
-			 vfsModeRead, &dir)) != errNone) {
-      /* ignore file not found */
-      if (err != vfsErrFileNotFound)
-	VFSError(err, stringScanForGames);
-    } else {
-      /* finally scan for game databases */
-      it = vfsIteratorStart;
-      info.nameBufLen = 20 + dmDBNameLength;
-      info.nameP = dbName;
-
-      while (it != vfsIteratorStop) {
-	if (VFSDirEntryEnumerate(dir, &it, &info) != errNone)
-	  break;
-
-	/* is this a .pdb name? */
-	if (StrCompare(SUFFIX_PDB, &info.nameP[StrLen(info.nameP) - 4]) == 0) {
-	  /* attach file name to path */
-	  StrCopy(fileName, PHOINIX_DIR "/");
-	  StrCat(fileName, info.nameP);
-
-	  /* check whether this really is a game database */
-	  if (VFSFileOpen(VFSVolume[volume]->volId, fileName,
-			  vfsModeRead, &file) == errNone) {
-	    /* fetch name, type and creator */
-	    if (VFSFileDBInfo(file, fileName, NULL, NULL, NULL,
-			      NULL, NULL, NULL, NULL, NULL,
-			      &type, &creator, NULL) == errNone) {
-	      /* verify creator and type */
-	      if ((creator == miscCreator) && (type == gameDbType)) {
-		/* cut off .pdb and check whether int. and ext. name match */
-		dbName[StrLen(dbName) - 4] = 0;
-		if (StrCompare(fileName, dbName) == 0) {
-		  /* ok, add this file to the list */
-		  if (!ManagerListAdd(ListDbP, fileName, 0, volume)) {
-		    VFSFileClose(file);
-		    VFSFileClose(dir);
-		    return false;
-		  }
-		}
-	      }
-	    }
-
-	    /* and close the database again */
-	    VFSFileClose(file);
-	  }
-	}
-      }
-      /* finally close the directory */
-      VFSFileClose(dir);
-    }
-  }
-  return true;
-}
-
-/* === Load and unload games ==========================================	*/
-
-/**
- * Loads a game file as database into Palm RAM.
- *
- * @param  game pointer to the games list entry.
- * @param  card pointer to card number of generated database.
- * @param  id   pointer to local ID of generated database.
- * @return true if successful.
- */
-Boolean VFSGameLoad(ManagerDbListEntryType *game, UInt16 *card, LocalID *id) {
-  Err  err;
-  Char dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-
-  /* try to import the game from the memory card */
-  if (VFSVolume == NULL)
-    return false;
-
-  /* build file name */
-  StrPrintF(dbName, PHOINIX_DIR "/%s" SUFFIX_PDB, game->name);
-
-  /* copy game database to card */
-  MiscShowBusy(true);
-  err = VFSImportDatabaseFromFile(VFSVolume[game->volIdx]->volId,
-				  dbName, card, id);
-  MiscShowBusy(false);
-  if (err != errNone) {
-    /* don't complain/bail out of database already exists */
-    if (err != dmErrAlreadyExists) {
-      VFSError(err, stringImportDb);
-      return false;
-    }
-  }
-
-  VFSGameLoaded = game;
-  return true;
-}
-
-/**
- * Unloads the current game, i.e. delete the copy in Palm RAM.
- *
- * @return true if successful.
- */
-Boolean VFSGameUnload(void) {
-  LocalID dbIdGame;
-
-  if (VFSVolume == NULL)
-    return false;
-
-  if (VFSGameLoaded == NULL)
-    return false;
-
-  /* just delete the local copy of the game */
-  /* get local index of state database */
-  if ((dbIdGame = DmFindDatabase(VFSGameLoaded->cardNo,
-				 VFSGameLoaded->name)) != 0)
-    DmDeleteDatabase(VFSGameLoaded->cardNo, dbIdGame);
-
-  VFSGameLoaded = NULL;
-  return true;
-}
-
-/**
- * Loads a game state as database into Palm RAM.
- *
- * @param  game pointer to the games list entry.
- * @param  card pointer to card number of generated database.
- * @param  id   pointer to local ID of generated database.
- * @return true if successful.
- */
-Boolean VFSStateLoad(ManagerDbListEntryType *game, UInt16 *card, LocalID *id) {
-  Err     err;
-  Char    dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  LocalID dbId;
-
-  if (MemoryMbcInfo.crc == 0)
-    return false;
-
-  if (VFSVolume == NULL)
-    return false;
-
-  /* delete locally stored database before trying to open vfs */
-  StrPrintF(dbName, gameStatesDbName, MemoryMbcInfo.crc);
-
-  dbId = DmFindDatabase(currentStateDbCardNo, dbName);
-  if (dbId != 0)
-    DmDeleteDatabase(currentStateDbCardNo, dbId);
-
-  /* build name of state database */
-  StrPrintF(dbName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	    MemoryMbcInfo.crc);
-
-  /* copy state database from card */
-#if SHOW_BUSY_FOR_STATE_LOAD
-  MiscShowBusy(true);
-#endif
-  err = VFSImportDatabaseFromFile(VFSVolume[game->volIdx]->volId,
-				  dbName, card, id);
-#if SHOW_BUSY_FOR_STATE_LOAD
-  MiscShowBusy(false);
-#endif
-  if (err != errNone) {
-    if ((err != vfsErrFileNotFound)&&(err != dmErrAlreadyExists)) {
-      VFSError(err, stringImportDb);
-      return false;
-    }
-  }
-
-  /* remember that this is the state currently loaded */
-  VFSStateLoadedCardNo = game->cardNo;
-  VFSStateLoadedVolIdx = game->volIdx;
-  VFSStateLoadedCRC    = MemoryMbcInfo.crc;
-
-  /* report missing file */
-  if (err == vfsErrFileNotFound)
-    return false;
-
-  return true;
-}
-
-/**
- * Unloads the current state, i.e. move state back into VFS and delete the copy.
- *
- * @return true if successful.
- */
-Boolean VFSStateUnload(void) {
-  Err     err;
-  Char    dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  LocalID dbIdState;
-
-  if (VFSVolume == NULL)
-    return false;
-
-  if (VFSStateLoadedVolIdx == 0)
-    return false;
-
-  /* check if phoinix dir exists */
-  if (!VFSCheckDir(VFSVolume[VFSStateLoadedVolIdx]->volId)) {
-    return false;
-  }
-
-  /* build vfs file name of state database */
-  StrPrintF(dbName, gameStatesDbName, VFSStateLoadedCRC);
-
-  /* get local index of state database */
-  if ((dbIdState = DmFindDatabase(VFSStateLoadedCardNo, dbName)) != 0) {
-    /* build vfs file name of state database */
-    StrPrintF(dbName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	      VFSStateLoadedCRC);
-
-    /* delete file, if already existant */
-    if ((err = VFSFileDelete(VFSVolume[VFSStateLoadedVolIdx]->volId, dbName))
-	!= errNone) {
-      if ((err != vfsErrFileNotFound)&&(err != vfsErrFileGeneric))
-	VFSError(err, stringExportDb);
-    }
-
-    /* copy game database to card */
-#if SHOW_BUSY_FOR_STATE_UNLOAD
-    MiscShowBusy(true);
-#endif
-    err = VFSExportDatabaseToFile(VFSVolume[VFSStateLoadedVolIdx]->volId,
-				  dbName, VFSStateLoadedCardNo, dbIdState);
-#if SHOW_BUSY_FOR_STATE_UNLOAD
-    MiscShowBusy(false);
-#endif
-    if (err != errNone) {
-      VFSError(err, stringExportDb);
-      VFSStateLoadedVolIdx = 0;
-      return false;
-    }
-
-    /* everything seems to be fine, remove state database from handheld */
-    DmDeleteDatabase(VFSStateLoadedCardNo, dbIdState);
-  }
-
-  VFSStateLoadedVolIdx = 0;
-  return true;
-}
-
-/**
- * Rename the given game with the new name.
- *
- * @param  game pointer to the games list entry.
- * @param  name pointer to the new name.
- * @return true if successful.
- */
-Boolean VFSRenameGame(ManagerDbListEntryType *game, Char *name) {
-  Char    dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Char    newName[6 + dmDBNameLength];  /* {dmDBNameLength}.pdb */
+static Boolean FileExists(UInt16 volRefNum, const Char *fileName) {
   FileRef file;
-  Err     err;
 
-  if (VFSVolume == NULL)
-    return false;
-
-  MiscShowBusy(true);
-
-  /* build file names */
-  StrPrintF(dbName, PHOINIX_DIR "/%s" SUFFIX_PDB, game->name);
-  StrPrintF(newName, "%s" SUFFIX_PDB, name);
-
-  /* try to rename, first the database, then the file */
-  err = VFSFileOpen(VFSVolume[game->volIdx]->volId, dbName, vfsModeReadWrite, &file);
-  if (err == errNone) {
-    err = VFSFileSeek(file, vfsOriginBeginning, OffsetOf(DatabaseHdrType, name));
-    if (err == errNone) {
-      err = VFSFileWrite(file, dmDBNameLength, name, NULL);
-    }
+  if (VFSFileOpen(volRefNum, fileName, vfsModeRead, &file) == errNone) {
     VFSFileClose(file);
-  }
-  if (err == errNone) {
-    err = VFSFileRename(VFSVolume[game->volIdx]->volId, dbName, newName);
+    return true;
   }
 
-  MiscShowBusy(false);
-
-  if (err != errNone) {
-/* Currently this message doesn't exist. Because I'm planning to switch to
- * PQAs, I don't feel the need to correct this :-/
- */
-/*    VFSError(err, stringRenameDb); */
-    VFSError(err, stringMoveDb);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Delete the given game from the VFS.
- *
- * @param  game pointer to the games list entry.
- * @return true if successful.
- */
-Boolean VFSDeleteGame(ManagerDbListEntryType *game) {
-  Char dbName[20 + dmDBNameLength];  /* /PALM/Phoinix/{dmDBNameLength}.pdb */
-  Err  err;
-
-  if (VFSVolume == NULL)
-    return false;
-
-  /* build file name */
-  StrPrintF(dbName, PHOINIX_DIR "/%s" SUFFIX_PDB, game->name);
-  if ((err = VFSFileDelete(VFSVolume[game->volIdx]->volId, dbName))
-      != errNone) {
-    VFSError(err, stringDeleteDb);
-    return false;
-  }
-
-  /* build vfs file name of state database */
-  StrPrintF(dbName, PHOINIX_DIR "/" gameStatesDbName SUFFIX_PDB,
-	    MemoryMbcInfo.crc);
-  if ((err = VFSFileDelete(VFSVolume[game->volIdx]->volId, dbName))
-      != errNone) {
-    VFSError(err, stringDeleteDb);
-    return false;
-  }
-  return true;
-}
-
-/* === Local support functions ========================================	*/
-
-/**
- * Collects all volume names.
- */
-static void VFSScanFS(void) {
-  UInt32 it;
-  UInt16 vn, cnt = 0;
-  char   *vol = (char*)VFSVolume;
-
-  /* create dummy entry for palm itself */
-  if (VFSVolume != NULL) {
-    VFSVolume[cnt]= (VFSVolumeType*)(vol + sizeof(VFSVolumeType*) * VFSPresent);
-    VFSVolume[cnt]->volId = VFS_VOLUME_PALM;
-    StrCopy(VFSVolume[cnt]->volName, "Palm RAM");
-  }
-
-  /* scan for installed volumes */
-  it = vfsIteratorStart;
-  while (it != vfsIteratorStop) {
-    if (VFSVolumeEnumerate(&vn, &it) != errNone)
-      break;
-
-    /* increase volume counter */
-    cnt++;
-
-    /* get and save volume name if buffer allocated */
-    if (VFSVolume != NULL) {
-      VFSVolume[cnt]= (VFSVolumeType*)(vol +
-				       sizeof(VFSVolumeType*) * VFSPresent +
-				       sizeof(VFSVolumeType) * cnt);
-
-      /* save volume reference */
-      VFSVolume[cnt]->volId = vn;
-
-      /* get volumes name */
-      VFSVolumeGetLabel(vn, VFSVolume[cnt]->volName, 15);
-
-      /* replace empty name */
-      if (StrLen(VFSVolume[cnt]->volName) == 0)
-	StrPrintF(VFSVolume[cnt]->volName, "Volume %d", cnt);
-    }
-  }
-
-  /* init volume counter */
-  if (VFSVolume == NULL)
-    VFSPresent = cnt + 1;
+  return false;
 }
 
 /* === The end ========================================================	*/

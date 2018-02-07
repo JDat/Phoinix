@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2006 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: emulation_s.S,v $
+ *  Revision 1.9  2006/10/23 15:38:53  bodowenzel
+ *  Support for Rana
+ *
+ *  Revision 1.8  2005/05/03 08:39:11  bodowenzel
+ *  Moved coldReset, ime, im and error into EmulationCpuState
+ *
+ *  Revision 1.7  2005/04/03 14:08:33  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.6  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.5  2004/01/11 19:07:14  bodowenzel
+ *  Corrected copyright
+ *
+ *  Revision 1.4  2003/04/19 13:17:03  bodowenzel
+ *  Now all calls are jbsr xxx(%pc)
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -67,6 +88,7 @@
 /* === Includes =======================================================	*/
 
 #include "emulation.h"
+
 #include "video.h"
 
 /* === Global variables ===============================================	*/
@@ -100,6 +122,14 @@ EmulationCpuState.e:		.space	1	/* E */
 EmulationCpuState.h:		.space	1	/* H */
 	.globl	EmulationCpuState.l
 EmulationCpuState.l:		.space	1	/* L */
+	.globl	EmulationCpuState.coldReset
+EmulationCpuState.coldReset:	.space	1	/* cold reset flag */
+	.globl	EmulationCpuState.ime
+EmulationCpuState.ime:		.space	1	/* int. master enable */
+	.globl	EmulationCpuState.im
+EmulationCpuState.im:		.space	1	/* int. mask = IME & IE */
+	.globl	EmulationCpuState.error
+EmulationCpuState.error:	.space	1	/* error code */
 
 	.globl	EmulationIo
 EmulationIo:
@@ -174,7 +204,9 @@ EmulationIo.ram:		.space	0x7f	/* CPU RAM */
 	.globl	EmulationIo.ie
 EmulationIo.ie:			.space	1	/* interrupt enable */
 
-	.text
+/* === Placing the code ===============================================	*/
+
+	.section	emulator,"x"
 
 /* === Function for starting the emulation ============================	*/
 
@@ -209,7 +241,7 @@ EmulationStartKernel:
 	jsr	(%a4)
 /* ********************************************************************	*/
 
-	move.b	%d0,EmulationError@END.w(%a5)
+	move.b	%d0,EmulationCpuState.error@END.w(%a5)
 
 	move.w	%d6,VideoCycles@END.w(%a5)	/* currently unnecessary */
 
@@ -237,9 +269,11 @@ EmulationStartKernel:
 
 	.globl	EmulationOpcodeStop
 EmulationOpcodeStop:
-	bsr	VideoClearScreen
+	lea	VideoClearBuffer(%pc),%a2
+	move.l	%a2,2+indexToAddress(gbemuJmpLcdLine)
+	jsr	indexToAddress(gbemuJmpLcdLine)
 
-	lea	EmulationIntIm@END.w(%a5),%a2
+	lea	EmulationCpuState.im@END.w(%a5),%a2
 	move.b	(%a2),-(%sp)
 	move.b	#0x00,(%a2)
 	pea	EosAbort(%pc)		/* set up for waiting */
@@ -252,27 +286,17 @@ EosWait:
 	beq.s	EosWait			/* wait for user */
 
 	addq.w	#4,%sp
-	move.b	(%sp)+,EmulationIntIm@END.w(%a5)
+	move.b	(%sp)+,EmulationCpuState.im@END.w(%a5)
 	rts				/* back to emulation */
 
 /* If VideoUserPoll tries to return to the emulation caller, it will
  * resume here:
  */
 EosAbort:
-	move.b	(%sp)+,EmulationIntIm@END.w(%a5)
+	move.b	(%sp)+,EmulationCpuState.im@END.w(%a5)
 	subq.w	#2,%a0			/* restore state before STOP */
 
 	addq.w	#4,%sp			/* ignore return to emulation */
 	rts				/* return to emulation caller */
-
-/* --- Return after executed breakpoint	-------------------------------	*/
-
-#if 0 /* currently unused */
-	.globl	EmulationBreakpointReturn
-EmulationBreakpointReturn:
-	addq.w	#4,%sp			/* ignore return to emulation */
-	moveq	#0,%d0
-	rts				/* return to emulation caller */
-#endif
 
 /* === The end ========================================================	*/

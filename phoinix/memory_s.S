@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2004 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: memory_s.S,v $
+ *  Revision 1.4  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -48,8 +54,13 @@
 /* === Includes =======================================================	*/
 
 #include "memory.h"
+
 #include "video.h"
 #include "gbemu.h"
+
+/* === Placing the code ===============================================	*/
+
+	.section	emulator,"x"
 
 /* === Functions for memory bank control ==============================	*/
 

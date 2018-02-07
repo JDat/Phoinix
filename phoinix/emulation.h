@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2007 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,44 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: emulation.h,v $
+ *  Revision 1.14  2007/02/11 17:14:43  bodowenzel
+ *  Multiple saved state feature implemented
+ *
+ *  Revision 1.13  2005/05/03 08:39:11  bodowenzel
+ *  Moved coldReset, ime, im and error into EmulationCpuState
+ *
+ *  Revision 1.12  2005/04/03 14:08:33  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.11  2005/02/17 19:42:35  bodowenzel
+ *  Added pace control
+ *
+ *  Revision 1.10  2005/01/29 10:25:37  bodowenzel
+ *  Added const qualifier to pointer parameters
+ *
+ *  Revision 1.9  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.8  2004/12/02 20:01:22  bodowenzel
+ *  New configurable screen layout
+ *
+ *  Revision 1.7  2004/10/24 09:11:05  bodowenzel
+ *  New button mapping
+ *
+ *  Revision 1.6  2004/09/19 12:36:25  bodowenzel
+ *  New info type (None)
+ *
+ *  Revision 1.5  2004/06/06 09:25:01  bodowenzel
+ *  Change game's location to RAM on error saving states
+ *
+ *  Revision 1.4  2002/10/19 08:08:10  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.3  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -43,9 +76,12 @@
 
 /* === Includes =======================================================	*/
 
+#include "sections.h"
 #include "gbemu.h"
 
 /* === Constants ======================================================	*/
+
+#define emulationKeyCount (8)
 
 /* offsets, depending on Gameboy hardware */
 #define emulationJoypadBoth (0x0)
@@ -53,14 +89,11 @@
 #define emulationJoypadCurs (0x2)
 #define emulationJoypadNone (0x3)
 
+#define emulationMaxTime (100UL * 60 * 60)
+
 /* === Type definitions ===============================================	*/
 
 #ifdef __GNUC__ /* only if C preprocessing */
-
-typedef enum {
-/* NOTE: this has to match the texts in LC_.../Phoinix.rcp! */
-  emulationInfoTime = 0, emulationInfoBattery, emulationInfoSpeed
-} EmulationInfoType;
 
 typedef struct {
 /* NOTE: this has to match the .bss section in emulation_s.S! */
@@ -76,10 +109,17 @@ typedef struct {
   UInt8 e;
   UInt8 h;
   UInt8 l;
+  UInt8 coldReset;
+  UInt8 ime;
+  UInt8 im;
+  UInt8 error;
 } EmulationCpuStateType;
 
 typedef struct {
-/* NOTE: this has to match the .bss section in emulation_s.S! */
+/* NOTES:
+ * This has to match the .bss section in emulation_s.S!
+ * The layout has to be equal to the layout of the GB!
+ */
   UInt8 p1;                   /* joypad, used bit 1 and 0 */
   UInt8 sb;                   /* serial transfer data */
   UInt8 sc;                   /* serial transfer control */
@@ -133,10 +173,9 @@ typedef struct {
 } EmulationIoType;
 
 typedef struct {
-  Boolean               running;
-  UInt32                time;
-  UInt8                 error;
-  UInt8                 intIme;
+  Boolean paused;
+  Boolean boosted;
+  UInt32  time;
 } EmulationMiscType;
 
 typedef struct {
@@ -160,11 +199,6 @@ extern GbemuComboType *EmulationEmulator;
 
 extern EmulationCpuStateType EmulationCpuState;
 
-extern UInt8 EmulationIntIme;
-extern UInt8 EmulationIntIm;
-
-extern UInt8 EmulationError;
-
 extern EmulationIoType EmulationIo; /* input/output space */
 
 extern UInt8 *EmulationJoypadPtr;
@@ -177,19 +211,27 @@ extern UInt8 EmulationJoypadOld; /* saved joypad value before user poll */
 
 #ifdef __GNUC__ /* only if C preprocessing */
 
-void EmulationGetEvent(void);
+void EmulationGetEvent(void)
+  EMULATION_SECTION;
 
-Boolean EmulationFormHandleEvent(EventType *evtP);
-Boolean EmulationUserPoll(void);
+Boolean EmulationFormHandleEvent(EventType *evtP)
+  EMULATION_SECTION;
+Boolean EmulationUserPoll(void)
+  EMULATION_SECTION;
 
-Boolean EmulationSetupAll(void);
-void EmulationCleanupAll(void);
+Boolean EmulationSetupAll(void)
+  EMULATION_SECTION;
 
-Boolean EmulationSetup(void);
-void EmulationCleanup(void);
-void EmulationResetState(void);
-void EmulationLoadState(EmulationStateType *stateP);
-void EmulationSaveState(void *recP, UInt32 offset);
+Boolean EmulationSetup(void)
+  EMULATION_SECTION;
+void EmulationCleanup(void)
+  EMULATION_SECTION;
+void EmulationResetState(void *recP, UInt32 offset)
+  EMULATION_SECTION;
+void EmulationLoadState(const EmulationStateType *stateP)
+  EMULATION_SECTION;
+void EmulationSaveState(void *recP, UInt32 offset)
+  EMULATION_SECTION;
 
 #endif
 
@@ -197,7 +239,8 @@ void EmulationSaveState(void *recP, UInt32 offset);
 
 #ifdef __GNUC__ /* only if C preprocessing */
 
-void EmulationStartKernel(void);
+void EmulationStartKernel(void)
+  EMULATION_SECTION;
 
 /* NOTE:
  * These functions are called from the emulation and get their parameters
@@ -205,7 +248,8 @@ void EmulationStartKernel(void);
  * just for exporting the names.
  */
 
-void EmulationOpcodeStop(void);
+void EmulationOpcodeStop(void)
+  EMULATION_SECTION;
 
 #endif
 

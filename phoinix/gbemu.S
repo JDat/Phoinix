@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2006 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: gbemu.S,v $
+ *  Revision 1.5  2006/10/23 15:38:53  bodowenzel
+ *  Support for Rana
+ *
+ *  Revision 1.4  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -71,14 +80,11 @@
  *	a7		(SP for 68000)
  * ======================================================================
  */
-	
-/* === Section definition =============================================	*/
-	
-	.section	emulator,"x"
 
 /* === Includes =======================================================	*/
 
 #include "gbemu.h"
+
 #include "emulation.h"
 #include "video.h"
 
@@ -109,7 +115,7 @@ gbFlagC		=	0x10
 
 .macro	return	ret			/* return to caller with code */
 	moveq	#\ret,%d0
-	rts
+	jmp	indexToAddress(gbemuReturn)
 	.endm
 
 .macro	next_pc				/* execute next instruction */
@@ -213,6 +219,10 @@ goon\@:
 /* === Macros for extensions ==========================================	*/
 
 #include "gbemu_xt.inc"
+
+/* === Placing the code ===============================================	*/
+
+	.section	kernel,"x"
 
 /* === And now produce the code! ======================================	*/
 

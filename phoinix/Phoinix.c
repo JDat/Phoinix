@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2005 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,53 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: Phoinix.c,v $
+ *  Revision 1.19  2005/04/03 14:08:33  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.18  2005/01/30 19:35:26  bodowenzel
+ *  Removed support for VFS mount and unmount
+ *
+ *  Revision 1.17  2005/01/29 10:25:34  bodowenzel
+ *  Added const qualifier to pointer parameters
+ *
+ *  Revision 1.16  2005/01/28 17:35:13  bodowenzel
+ *  Manager form uses a scrollable table now for the list of games
+ *
+ *  Revision 1.15  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.14  2004/10/18 17:48:51  bodowenzel
+ *  Dropped macro LITE, no need to maintain smaller code
+ *
+ *  Revision 1.13  2004/09/19 12:35:54  bodowenzel
+ *  Enhanced error reporting with string parameter
+ *
+ *  Revision 1.12  2004/06/20 14:23:20  bodowenzel
+ *  VFS mount and unmount support
+ *
+ *  Revision 1.11  2004/06/11 16:14:19  bodowenzel
+ *  Enhanced error reporting with MiscPostError()
+ *
+ *  Revision 1.10  2004/04/05 21:56:55  bodowenzel
+ *  VFS review and its consequences
+ *
+ *  Revision 1.9  2004/03/02 19:24:16  bodowenzel
+ *  Changed to new error function MiscShowError()
+ *
+ *  Revision 1.8  2004/01/11 19:05:58  bodowenzel
+ *  Start of VFS review and correction
+ *
+ *  Revision 1.7  2003/04/27 09:36:18  bodowenzel
+ *  Added Lite edition
+ *
+ *  Revision 1.6  2002/12/07 08:57:43  bodowenzel
+ *  OS5 check removed
+ *
  *  Revision 1.5  2002/11/02 15:53:41  bodowenzel
  *  Check for OS 5 added
  *
@@ -78,10 +120,13 @@
 /* === Includes =======================================================	*/
 
 #include <PalmOS.h>
+#include <VFSMgr.h>
 
 #include "Phoinix.h"
+
+#include "sections.h"
 #include "misc.h"
-#include "prefs.h"
+#include "prefs.h" 
 #include "manager.h"
 #include "states.h"
 #include "vfs.h"
@@ -90,33 +135,41 @@
 
 /* === Function prototypes ============================================	*/
 
-static Err StartApplication(UInt16 launchFlags);
-static void StopApplication(void);
-static void EventLoop(void);
-static Boolean ApplicationHandleEvent(EventType *evtP);
+static Err StartApplication(UInt16 launchFlags)
+  PHOINIX_SECTION;
+static void StopApplication(void)
+  PHOINIX_SECTION;
+static void EventLoop(void)
+  PHOINIX_SECTION;
+static Boolean ApplicationHandleEvent(const EventType *evtP)
+  PHOINIX_SECTION;
 
 /* === M A I N ========================================================	*/
 
 /**
  * Main function of the application, returns an error code.
  *
- * @param  cmd         launch code.
- * @param  cmdPBP      pointer to the parameter block.
- * @param  launchFlags several flags from the launcher.
- * @return error code, errNone if all is OK.
+ * @param cmd         launch code.
+ * @param cmdPBP      pointer to the parameter block.
+ * @param launchFlags several flags from the launcher.
+ * @return            error code, errNone if all is OK.
  */
 UInt32 PilotMain(UInt16 cmd, void *cmdPBP, UInt16 launchFlags) {
   Err ret;
 
   ret = errNone;
 
-  if (cmd == sysAppLaunchCmdNormalLaunch) {
+  switch (cmd) {
+  case sysAppLaunchCmdNormalLaunch:
     /* normal launch */
     ret = StartApplication(launchFlags);
     if (ret == errNone) {
       EventLoop();
       StopApplication();
     }
+
+  default:
+    break;
   }
 
   return ret;
@@ -127,8 +180,8 @@ UInt32 PilotMain(UInt16 cmd, void *cmdPBP, UInt16 launchFlags) {
 /**
  * Initializes the application, run once before the event loop.
  *
- * @param  launchFlags several flags from the launcher.
- * @return error code, errNone if all is OK.
+ * @param launchFlags several flags from the launcher.
+ * @return            error code, errNone if all is OK.
  */
 static Err StartApplication(UInt16 launchFlags) {
   Err err;
@@ -138,27 +191,30 @@ static Err StartApplication(UInt16 launchFlags) {
     sysMakeROMVersion(3, 0, 0, sysROMStageRelease, 0),
     0xFFFFFFFFUL, /* no upper limit yet */
     launchFlags);
-  if (err != errNone)
+  if (err != errNone) {
     return err;
+  }
 
   /* check the display, if OK switch to gray */
   if (!VideoGraySwitchOn()) {
-    FrmAlert(alertIdStartupIncompatibleScreen);
+    MiscShowError(miscErrInitialization, miscErrScreen, NULL);
     return sysErrParamErr;
   }
 
-  /* load preferences */
+  /* set up VFS support */
+  if (!VfsInit()) {
+    MiscShowError(miscErrVfs, miscErrMemoryFull, NULL);
+  }
+
+  /* load preferences, after VFS support to get the volume index */
   PrefsLoad();
 
-  /* try to access vfs */
-  VFSSetup();
-
   /* try to restart an interrupted game */
-  if (StatesAutostartCurrentState())
+  if (StatesAutostart()) {
     FrmGotoForm(formIdEmulation);
-  else
+  } else {
     FrmGotoForm(formIdManager);
-
+  }
   return errNone;
 }
 
@@ -170,14 +226,17 @@ static void StopApplication(void) {
   FrmCloseAllForms();
 
   /* cleanup databases */
-  StatesClosePrefsAndStates();
+  StatesClosePrefsAndStatesWithShow(MiscShowError, true);
   ManagerExit();
 
-  /* shut down access vfs */
-  VFSExit();
+  /* cleanup volumes */
+  VfsExit();
 
   /* save preferences */
   PrefsSave();
+
+  /* now display the last error, if any */
+  MiscShowPendingError();
 
   /* switch back to default video mode */
   VideoGraySwitchOff();
@@ -193,30 +252,31 @@ static void EventLoop(void) {
 
   do {
     EmulationGetEvent();
-    if (!SysHandleEvent(&EmulationTheEvent))
-      if (!MenuHandleEvent(NULL, &EmulationTheEvent, &err))
-	if (!ApplicationHandleEvent(&EmulationTheEvent))
+    if (!SysHandleEvent(&EmulationTheEvent)) {
+      if (!MenuHandleEvent(NULL, &EmulationTheEvent, &err)) {
+	if (!ApplicationHandleEvent(&EmulationTheEvent)) {
 	  FrmDispatchEvent(&EmulationTheEvent);
+	}
+      }
+    }
   } while (EmulationTheEvent.eType != appStopEvent);
 }
 
 /**
- * Handles just the frmLoadEvent.
+ * Handles globally used events.
  *
- * @param  evtP pointer to the event structure.
- * @return true when the event is handled.
+ * @param evtP pointer to the event structure.
+ * @return     true when the event is handled.
  */
-static Boolean ApplicationHandleEvent(EventType *evtP) {
-  FormType *frmP;
+static Boolean ApplicationHandleEvent(const EventType *evtP) {
+  FormType  *frmP;
 
-  if (evtP->eType == frmLoadEvent) {
+  switch (evtP->eType) {
+  case frmLoadEvent:
     frmP = FrmInitForm(evtP->data.frmLoad.formID);
     FrmSetActiveForm(frmP);
 
     switch (evtP->data.frmLoad.formID) {
-    case formIdNoGame:
-      FrmSetEventHandler(frmP, MiscNoGameFormHandleEvent);
-      break;
     case formIdManager:
       FrmSetEventHandler(frmP, ManagerFormHandleEvent);
       break;
@@ -227,8 +287,12 @@ static Boolean ApplicationHandleEvent(EventType *evtP) {
       break;
     }
     return true;
+  case phoinixErrorEvent:
+    MiscShowPendingError();
+    return true;
+  default:
+    return false;
   }
-  return false;
 }
 
 /* === The end ========================================================	*/

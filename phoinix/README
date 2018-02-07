@@ -8,9 +8,9 @@ resource. This is for programmers who like to build it from source.
 What is Phoinix?
 ----------------
 
-Phoinix ['foiniks] is the greek word for date palm. It is the name for
-the mystic bird which burns itself after 500 years and is reborn out
-of its ashes, too.
+Phoinix ['foiniks] is the greek word for the date palm. It is the name
+for the mystic bird which burns itself after 500 years and is reborn
+out of its ashes, too.
 
 In this context Phoinix is the name of a Nintendo Gameboy(TM) emulator
 for the Palm OS(R) Computing Platform. It was formerly known as
@@ -19,7 +19,7 @@ PalmBoy, but Palm Inc. claims the word "Palm" as a trademark.
 Copyleft
 --------
 
-Copyright 2000-2002 Bodo Wenzel.
+Copyright 2000-2007 Bodo Wenzel.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,9 +41,7 @@ Building
 
 The source files are created to be used with the GNU tool set. You'll
 find the SDK at Palm's site (http://www.palm.com). You need the header
-files for PalmOS 4 or better.
-
-Currently there are no experiences with this SDK on Windows...
+files for PalmOS 5 or better.
 
 Unpack the source's archive and enter "make". The executables are in
 the directories beginning with LC_, separated by language.
@@ -53,9 +51,28 @@ Before trying to compile, read the chapter 'Prerequisites', please.
 Prerequisites
 -------------
 
-Phoinix supports HandEra's H330 and the GamePad made by WorldWide
-Widget Works. To include this support you need the corresponding
-header files in your system include directory.
+Phoinix supports several third party extensions. To include this
+support you need the corresponding header files in your system include
+directory.
+
+Beginning with some certain version of the Palm SDK the script
+"palmdev-prep" can be used to set up the directories automatically.
+
+This is the list of third party SDKs needed:
+
+* Sony Clié SDK
+* HandEra SDK
+* AlphaSmart SDK
+* GamePad DK
+* Fossil Wrist PDA SDK
+
+The following URLs may be out of date. Please use your brain to obtain
+the SDKs by yourself, if you find a link broken.
+
+The Sony Clié SDK can be obtained from http://www.us.sonypdadev.com/
+by following the links. Obviously Sony supports only CodeWarrior on
+Windows, so you have to convert all enum's of trap numbers into
+#define's.
 
 The HandEra SDK can be obtained from
 http://www.handera.com/support/developsupport.asp.
@@ -63,14 +80,22 @@ Please install all files from the include branch in a directory named
 'HandEra' under your system include directory so that Vga.h becomes
 <your-inc-path>/HandEra/Vga.h.
 
+For the AlphaSmart Dana you need the corresponding SDK, please visit
+http://www.alphasmart.com and follow the links which are hopefully
+provided.
+
 The GamePad driver kit can be obtained from
 http://www.palmgamepad.com/
 and in the developers' section is a link to the file
 GamePadDevKit.zip. Copy GPDLib.h from this archive to your system
 include directory.
 
-Your system include path is probably something like
-/usr/local/palmdev/include, but you might want to ask your gcc with
+To obtain the Wrist PDA SDK visit http://www.fossil.com/tech, and
+follow the appropriate links. Copy the header files where they belong
+into, and don't forget JotAPI.h.
+
+Your system include path includes probably something like
+/opt/palmdev/include, but you might want to ask your gcc with
 "-dumpspecs".
 
 Unfortunately some of these files are in DOS format (end-of-line by
@@ -79,22 +104,27 @@ dos2unix). If you get "stray \ " error messages, you didn't correctly
 convert these files and they are still in DOS mode.
 
 The calls of PilRC (the ressource compiler) use several new options;
-you need at least version 2.9 (or 2.8p6)!
+you need at least version 3.2!
 
 Getting help
 ------------
 
 Please use the mailing list for developers:
 http://lists.sourceforge.net/mailman/listinfo/phoinix-devel
-For special cases mail the author:
+
+For special cases send an email to the author:
 palm.gb_emu@gmx.de
 
 Contribute translations
 -----------------------
 
+The homepage provides an archive with a verbose description how and
+what to translate. Please download this file and read it. Here is just
+a very brief description:
+
 To add another localizes version, create an appropriate directory
 LC_<language>_<country> with <language> in small letters and <country>
-in capital. Create three files in this directory:
+in capitals. Create three files in this directory:
 
 'GPL.txt' contains the translated GNU General Public License.
 
@@ -104,9 +134,6 @@ in capital. Create three files in this directory:
 texts.
 
 Please use the english (LC_en_GB) version as basis.
-
-The homepage provides an archive with a verbose description how and
-what to translate. Please download this file and read it.
 
 Trademarks
 ----------

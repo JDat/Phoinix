@@ -104,9 +104,12 @@ garantias; mantenha intactas todos os avisos que se referem a esta
 Licença e à ausência total de garantias; e forneça a outros
 recebedores do Programa uma cópia desta Licença, junto com o Programa.
 
+Você pode cobrar pelo ato físico de transferir uma cópia e pode,
+opcionalmente, oferecer garantia em troca de pagamento.
+
   2. Você pode modificar sua cópia ou cópias do Programa, ou qualquer
 parte dele, assim gerando um trabalho baseado no Programa, e copiar e
-distribuir essas modificações ou trabalhos sob os temos da seção 1
+distribuir essas modificações ou trabalhos sob os termos da seção 1
 acima, desde que você também se enquadre em todas estas condições:
 
     a) Você tem que fazer com que os arquivos modificados levem avisos

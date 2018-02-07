@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2004 Bodo Wenzel
+ * (c)2000-2007 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,49 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: video_s.S,v $
+ *  Revision 1.15  2007/02/25 13:15:08  bodowenzel
+ *  No interrupt when writing into STAT
+ *  Check for LYC on line 144 (Vsync) added
+ *
+ *  Revision 1.14  2007/02/14 15:23:45  bodowenzel
+ *  Frame counting like before gives better info display
+ *  Writing into LYC should not generate an interrupt
+ *
+ *  Revision 1.13  2007/02/11 17:14:53  bodowenzel
+ *  Correct counting of video frames
+ *  Correct handling of opcode HALT
+ *
+ *  Revision 1.12  2007/01/08 13:46:56  bodowenzel
+ *  Hsync interrupts only in line 0 to 143
+ *
+ *  Revision 1.11  2007/01/05 14:17:33  bodowenzel
+ *  LYC=0 interrupt now on first line
+ *
+ *  Revision 1.10  2006/10/23 15:39:27  bodowenzel
+ *  Clearing the screen at STOP corrected
+ *
+ *  Revision 1.9  2005/02/17 19:42:35  bodowenzel
+ *  Added pace control
+ *
+ *  Revision 1.8  2005/01/30 19:34:39  bodowenzel
+ *  Shortened long error message
+ *
+ *  Revision 1.7  2004/12/28 13:58:40  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *  Support for devices without direct screen access
+ *
+ *  Revision 1.6  2004/01/11 19:07:14  bodowenzel
+ *  Corrected copyright
+ *
+ *  Revision 1.5  2003/04/19 13:17:36  bodowenzel
+ *  Now all calls are jbsr xxx(%pc)
+ *  Screen copy for OS5 via WinDrawBitmap()
+ *
  *  Revision 1.4  2002/10/19 08:08:11  bodowenzel
  *  History cleanup, Javadoc-style header
  *
@@ -91,6 +129,7 @@
 /* === Includes =======================================================	*/
 
 #include "video.h"
+
 #include "gbemu.h"
 
 /* === Constants ======================================================	*/
@@ -153,6 +192,10 @@
 	.lcomm	VideoIntLycReload,1	/* counter for STAT, LYC */
 	.lcomm	VideoIntLycCount,1
 
+/* === Placing the code ===============================================	*/
+
+	.section	emulator,"x"
+
 /* === Function for user polling ======================================	*/
 
 	.globl	VideoUserPoll
@@ -163,19 +206,34 @@ VideoUserPoll:
 #define vupRegs %d3/%a0/%a1
 	movem.l	vupRegs,-(%sp)
 
+/* - - copy screen if frame doesn't have to be skipped - - - - - - - -	*/
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	VupNoCopy		/* skip frame? */
+
 	jbsr	VideoCopyScreen(%pc)	/* show last rendered screen */
+VupNoCopy:
+	add.w	#1,VideoFrames@END.w(%a5)
 
 /* - - poll for user and system requests - - - - - - - - - - - - - - -	*/
 	jbsr	EmulationUserPoll(%pc)
 	tst.b	%d0
-	jeq	VsGoon			/* continue emulation */
+	jeq	VupGoon			/* continue emulation */
 
 	movem.l	(%sp)+,vupRegs
-	addq.w	#4,%sp			/* ignore return to caller */
 
+	lea	0x76*0x0100(%a4),%a2
+	lea	gbemuOpSize(%a2),%a3
+	move.l	(%sp)+,%d0
+	cmp.l	%a2,%d0
+	jcs	VupQuit
+	cmp.l	%a3,%d0			/* check for opcode $76 (HALT) */
+	jcc	VupQuit
+	subq.w	#1,%a0			/* correct PC to repeat it */
+
+VupQuit:
 	moveq	#gbemuRetUserStop,%d0	/* return to emulation caller */
 	rts
-VsGoon:
+VupGoon:
 
 /* - - check for joypad interrupt  - - - - - - - - - - - - - - - - - -	*/
 	move.l	EmulationJoypadPtr@END.w(%a5),%a0
@@ -190,9 +248,7 @@ VsGoon:
 /* - - MBC3 work (count RTC) - - - - - - - - - - - - - - - - - - - - -	*/
 	jbsr	MemoryMbc3RtcWork(%pc)
 
-/* - - start a new screen - - - - - - - - - - - - - - - - - - - - - - -	*/
-	add.w	#1,VideoFrames@END.w(%a5)
-
+/* - - start a new screen  - - - - - - - - - - - - - - - - - - - - - -	*/
 	move.w	#screenYMax-1-(videoScreenHeight),VideoLyPrv@END.w(%a5)
 	lea	LineGap(%pc),%a2
 	move.l	%a2,2+indexToAddress(gbemuJmpLcdLine)
@@ -204,13 +260,21 @@ VsGoon:
 
 	move.w	VideoTimerDeltaTima@END.w(%a5),%d0
 	add.w	%d0,VideoTimerTima@END.w(%a5)
-	jcc	VsTExit
+	jcc	VupTExit
 	move.b	EmulationIo.tma@END.w(%a5),%d0
-VsTLoop:
+VupTLoop:
 	add.b	%d0,VideoTimerTima@END.w(%a5)
-	jcs	VsTLoop
+	jcs	VupTLoop
 	bset	#2,EmulationIo.if_@END.w(%a5)
-VsTExit:
+VupTExit:
+
+	subq.b	#1,VideoIntLycCount@END.w(%a5)
+	jcc	VupLycExit
+	btst	#6,EmulationIo.stat@END.w(%a5)
+	jeq	VupLycExit
+	move.b	VideoIntMaskStat@END.w(%a5),%d0
+	or.b	%d0,EmulationIo.if_@END.w(%a5)
+VupLycExit:
 
 	move.b	VideoIntMaskSV@END.w(%a5),%d0
 	and.b	VideoIntMaskStat@END.w(%a5),%d0
@@ -240,36 +304,32 @@ ViwtTable:
 
 /* === Functions for screen rendering =================================	*/
 
-	.globl	VideoClearScreenByDirectAccess
-VideoClearScreenByDirectAccess:
+	.globl	VideoClearBuffer
+VideoClearBuffer:
 /* Can be called from emulation and C-code:
  *	d0.w	(scratch)
- *	d1.w	(scratch)
- *	d2	(scratch)
+ *	d1	(scratch)
  * Call this function with memory protection disabled!
  */
 	move.l	%a2,-(%sp)
-	move.l	VideoDisplayPtr@END.w(%a5),%a2
+	move.l	VideoBufferPtr@END.w(%a5),%a2
 	move.w	#videoScreenHeight-1,%d0
-	move.w	VideoDisplayWidth@END.w(%a5),%d1
-	sub.w	#videoScreenWidth/8*videoBitsPerPixel,%d1
-	moveq	#0,%d2
-VclsLoop:
+	moveq	#0,%d1
+VcbLoop:
 #if videoScreenWidth != 160
-#error "Please adjust function VideoClearScreenByDirectAccess!"
+#error "Please adjust function VideoClearBuffer!"
 #endif
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	move.l	%d2,(%a2)+
-	add.w	%d1,%a2
-	dbra	%d0,VclsLoop
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	move.l	%d1,(%a2)+
+	dbra	%d0,VcbLoop
 	move.l	(%sp)+,%a2
 	rts
 
@@ -285,7 +345,7 @@ VideoCopyScreenByDirectAccess:
  */
 
 #if videoScreenWidth != 160
-#error "Please adjust the screen copying in function VideoCopyScreenByDirectAccess!"
+#error "Please adjust function VideoCopyScreenByDirectAccess!"
 #endif
 #define vcpsRegs     %d3-%d7/%a0-%a4/%a6
 #define vcpsCopyRegs %d2-%d7/%a2-%a4/%a6	/* 10 registers !!! */
@@ -312,7 +372,7 @@ LineGap:
 	cmp.w	#screenYMax-1-153,%d0
 	jeq	LgNewPic		/* vsync finished? */
 	move.w	%d0,VideoLyPrv@END.w(%a5)
-	jra	LineQuitReturn
+	jra	LineGapQuitReturn
 
 /* - - start a new picture, no need to check for on/off - - - - - - - -	*/
 LgNewPic:
@@ -365,14 +425,6 @@ LgTLoop:
 LgTExit:
 
 	move.b	VideoIntLycReload@END.w(%a5),VideoIntLycCount@END.w(%a5)
-	jne	LgLycExit
-	btst	#6,EmulationIo.stat@END.w(%a5)
-	jeq	LgLycExit
-	subq.b	#1,VideoIntLycCount@END.w(%a5)
-	move.b	VideoIntMaskStat@END.w(%a5),%d0
-	or.b	%d0,EmulationIo.if_@END.w(%a5)
-LgLycExit:
-
 	jmp	indexToAddress(gbemuCodeCheckInt)
 
 /* --------------------------------------------------------------------	*/
@@ -380,6 +432,9 @@ LgLycExit:
 LineNone:
 /*	a2	pointer into palm display
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.l	VideoBufferCurPtr@END.w(%a5),%a2
 
 	moveq	#widthInBytes/4/2-1,%d0
@@ -410,6 +465,11 @@ LineQuit:
 /* --------------------------------------------------------------------	*/
 
 LineQuitReturn:
+	move.b	VideoIntMaskSH@END.w(%a5),%d0
+	and.b	VideoIntMaskStat@END.w(%a5),%d0
+	or.b	%d0,EmulationIo.if_@END.w(%a5)
+
+LineGapQuitReturn:
 	move.w	#opsPerLine-1,%d6
 
 	add.w	#videoClksPerLine,VideoTimerDiv@END.w(%a5)
@@ -432,9 +492,6 @@ LqrTExit:
 	or.b	%d0,EmulationIo.if_@END.w(%a5)
 LqrLycExit:
 
-	move.b	VideoIntMaskSH@END.w(%a5),%d0
-	and.b	VideoIntMaskStat@END.w(%a5),%d0
-	or.b	%d0,EmulationIo.if_@END.w(%a5)
 	jmp	indexToAddress(gbemuCodeCheckInt)
 
 /* --------------------------------------------------------------------	*/
@@ -445,6 +502,9 @@ LineOb:
  *	a3	pointer to pixel line in object
  *	a6	pointer VideoObFirst
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.l	%a0,-(%sp)
 
 	move.l	VideoBufferCurPtr@END.w(%a5),%a2
@@ -508,6 +568,9 @@ LoFgQuit:
 
 /* --------------------------------------------------------------------	*/
 LineBgCh:
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.w	VideoWyPrv@END.w(%a5),%d0
 	dbmi	%d0,LbcBg		/* window not reached? */
 	move.w	%d0,VideoWyPrv@END.w(%a5)
@@ -530,6 +593,9 @@ LineBg:
  *	a3	pointer to pixel line base
  *	a6	pointer to actual tile number in background
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.l	%a0,-(%sp)
 	move.l	%a1,-(%sp)
 
@@ -607,6 +673,9 @@ LineBgWi:
  *	a3	pointer to pixel line base
  *	a6	pointer to actual tile number in background
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.l	%a0,-(%sp)
 	move.l	%a1,-(%sp)
 
@@ -754,6 +823,9 @@ LbwWiExit:
 /* --------------------------------------------------------------------	*/
 
 LineBgChOb:
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	move.w	VideoWyPrv@END.w(%a5),%d0
 	dbmi	%d0,LbcoBg		/* window not reached? */
 	move.w	%d0,VideoWyPrv@END.w(%a5)
@@ -778,6 +850,9 @@ LineBgOb:
  *	a4	pointer to mask
  *	a6	pointer to actual tile number in background / VideoObFirst
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	movem.l	lboRegs,-(%sp)
 
 	move.l	VideoBufferCurPtr@END.w(%a5),%a2
@@ -979,6 +1054,9 @@ LineBgWiOb:
  *	a4	pointer to mask
  *	a6	pointer to actual tile number in background / VideoObFirst
  */
+	move.w	VideoFramesToSkip@END.w(%a5),%d0
+	jne	LineQuit		/* skip frame? */
+
 	movem.l	lbwoRegs,-(%sp)
 
 	move.l	VideoBufferCurPtr@END.w(%a5),%a2
@@ -2922,18 +3000,6 @@ ViwsVsyncOk:				/* set up for "vsync" */
 	move.b	#0x02,VideoIntMaskSH@END.w(%a5)
 ViwsHsyncOk:				/* set up for "hsync" */
 
-	btst	#6,%d0
-	jeq	ViwsStatOk
-	moveq	#screenYMax-1-0x100,%d1
-	sub.w	VideoLyPrv@END.w(%a5),%d1
-	cmp.b	EmulationIo.lyc@END.w(%a5),%d1
-	jne	ViwsStatOk
-	move.b	VideoIntMaskStat@END.w(%a5),%d0
-	or.b	%d0,EmulationIo.if_@END.w(%a5)
-	pea	(%a6)
-	jmp	indexToAddress(gbemuCodeCheckInt)	/* check "LYC" */
-ViwsStatOk:
-
 	jmp	(%a6)
 
 /* --------------------------------------------------------------------	*/
@@ -3100,17 +3166,6 @@ VideoIoWrLyc:
 	sub.w	VideoLyPrv@END.w(%a5),%d1
 	sub.b	%d1,%d0
 	move.b	%d0,VideoIntLycCount@END.w(%a5)	/* set up counter */
-
-	addq.b	#1,%d0
-	jne	ViwlcQuit
-	btst	#6,EmulationIo.stat@END.w(%a5)
-	jeq	ViwlcQuit
-	move.b	VideoIntMaskStat@END.w(%a5),%d0
-	or.b	%d0,EmulationIo.if_@END.w(%a5)
-	pea	(%a6)
-	jmp	indexToAddress(gbemuCodeCheckInt)	/* check "LYC" */
-
-ViwlcQuit:
 	jmp	(%a6)
 
 /* --------------------------------------------------------------------	*/

@@ -8,7 +8,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2007 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: gbemu_xt.inc,v $
+ *  Revision 1.8  2007/02/25 13:15:51  bodowenzel
+ *  Correct interrupt priorities
+ *
+ *  Revision 1.7  2006/10/23 15:38:53  bodowenzel
+ *  Support for Rana
+ *
+ *  Revision 1.6  2005/05/03 08:39:11  bodowenzel
+ *  Moved coldReset, ime, im and error into EmulationCpuState
+ *
+ *  Revision 1.5  2005/02/27 16:38:24  bodowenzel
+ *  Added module Eggs for easter eggs
+ *
+ *  Revision 1.4  2005/01/30 19:34:07  bodowenzel
+ *  Added labels for all combo parts
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -54,62 +72,57 @@
  ************************************************************************
  */
 
-.macro	xt_void	num
-.macro	xt_\num			/* unused extension */
-	.endm
-	.endm
-
 /* === Space for a small hidden game ;-) ==============================	*/
 
-/* The space herein is 0x30 bytes each chunk... */
-
-/* this is not yet filled in... and must be made by a tool */
-
-	.irpc	i,89abcdef01234
-	.irpc	j,0123456789abcdef
-	xt_void	\i\j
-	.endr
-	.endr
-
-	.irpc	j,012345678
-	xt_void	5\j
-	.endr
+#include "hidden.inc"
 
 /* === Miscellaneous support ==========================================	*/
 
-.macro	xt_59			/* stop opcode */
+.macro	xt_58			/* stop opcode */
+xt_58:
 	jmp	0.l
+	.endm
+
+.macro	xt_59			/* return to emulation caller */
+xt_59:
+xt_return:
+	rts			/* centralized to support debuggers */
 	.endm
 
 /* === Interrupt support ==============================================	*/
 
 /* the following routine has to be here because of the used macros */
 .macro	xt_5a			/* check for pending interrupts */
+xt_5a:
+xt_check_int:
 	move.b	EmulationIo.if_@END.w(%a5),%d0
-	and.b	EmulationIntIm@END.w(%a5),%d0
+	and.b	EmulationCpuState.im@END.w(%a5),%d0
 	jne	goon\@
 	rts
-goon\@:	moveq	#0x0060,%d1
+goon\@:	moveq	#0x0040,%d1
 	moveq	#4,%d2
-loop\@:	btst	%d2,%d0
-	jne	xt_ci1
-	subq.w	#0x0008,%d1
+loop\@:	lsr.b	#1,%d0
+	jcs	xt_ci1
+	addq.w	#0x0008,%d1
 	dbra	%d2,loop\@
 	rts
 	.endm
 
 .macro	xt_5b			/* call interrupt (part 1) */
-xt_ci1:	bclr	%d2,EmulationIo.if_@END.w(%a5)
+xt_5b:
+xt_ci1:	neg.b	%d2
+	addq.b	#4,%d2
+	bclr	%d2,EmulationIo.if_@END.w(%a5)
 	addq.w	#4,%sp
 	do_push	%a0
 	jra	xt_ci2
 	.endm
 
 .macro	xt_5c			/* call interrupt (part 2) */
-xt_ci2:
-	moveq	#0,%d0
-	move.b	%d0,EmulationIntIme@END.w(%a5)
-	move.b	%d0,EmulationIntIm@END.w(%a5)
+xt_5c:
+xt_ci2:	moveq	#0,%d0
+	move.b	%d0,EmulationCpuState.ime@END.w(%a5)
+	move.b	%d0,EmulationCpuState.im@END.w(%a5)
 	move.l	MemoryBaseRom0@END.w(%a5),%a0
 	move.l	%a0,EmulationCpuState.pcBase@END.w(%a5)
 	add.w	%d1,%a0
@@ -119,66 +132,82 @@ xt_ci2:
 /* === Memory vectors =================================================	*/
 
 .macro	xt_5d			/* RAM enable */
+xt_5d:
 	jmp	0.l
 	.endm
 
 .macro	xt_5e			/* ROM bank (low) selection */
+xt_5e:
 	jmp	0.l
 	.endm
 
 .macro	xt_5f			/* ROM bank (high) selection */
+xt_5f:
 	jmp	0.l
 	.endm
 
 .macro	xt_60			/* RAM bank selection */
+xt_60:
 	jmp	0.l
 	.endm
 
 .macro	xt_61			/* ROM/RAM mode selection */
+xt_61:
 	jmp	0.l
 	.endm
 
 .macro	xt_62			/* write to tile tab 0x8000..0x87ff */
+xt_62:
 	jmp	0.l
 	.endm
 
 .macro	xt_63			/* write to tile tab 0x8800..0x8fff */
+xt_63:
 	jmp	0.l
 	.endm
 
 .macro	xt_64			/* write to tile tab 0x9000..0x97ff */
+xt_64:
 	jmp	0.l
 	.endm
 
 .macro	xt_65			/* write to screen 0x9800..0x9bff */
+xt_65:
 	jmp	0.l
 	.endm
 
 .macro	xt_66			/* write to screen 0x9c00..0x9fff */
+xt_66:
 	jmp	0.l
 	.endm
 
 .macro	xt_67			/* read from external RAM 0xa000..0xbfff */
+xt_67:
 	jmp	0.l
 	.long	0
 	.endm
 
 .macro	xt_68			/* write to external RAM 0xa000..0xbfff */
+xt_68:
 	jmp	0.l
 	.long	0
 	.endm
 
 .macro	xt_69			/* write to OAM 0xfe00..0xfeff */
+xt_69:
 	jmp	0.l
 	.endm
 
 /* === LCD vectors ====================================================	*/
 
 .macro	xt_6a			/* support for LCD line */
+xt_6a:
+xt_lcd_line:
 	jmp	0.l
 	.endm
 
 .macro	xt_6b			/* write to DMA */
+xt_6b:
 	jmp	0.l
 	.endm
 
@@ -186,6 +215,7 @@ xt_ci2:
 
 /* the following routine has to be here because it is used in macros */
 .macro	xt_6c			/* SP push correction */
+xt_6c:
 	movem.l	%d0-%d2/%a2-%a3,-(%sp)
 	move.b	EmulationCpuState.spOffset+1@END.w(%a5),%d1
 	subq.b	#1,EmulationCpuState.spOffset+0@END.w(%a5)
@@ -198,6 +228,7 @@ xt_ci2:
 
 /* the following routine has to be here because it is used in macros */
 .macro	xt_6d			/* SP pop correction */
+xt_6d:
 	movem.l	%d0-%d2/%a2-%a3,-(%sp)
 	move.b	EmulationCpuState.spOffset+1@END.w(%a5),%d1
 	addq.b	#1,EmulationCpuState.spOffset+0@END.w(%a5)
@@ -210,6 +241,7 @@ xt_ci2:
 
 /* the following routine has to be here because it is used in macros */
 .macro	xt_6e			/* SP ROM bank correction */
+xt_6e:
 	move.w	EmulationCpuState.spOffset@END.w(%a5),%d1
 	jmi	goon\@
 	cmp.w	#0x4000,%d1
@@ -222,6 +254,7 @@ goon\@:	jmp	(%a6)
 
 /* the following routine has to be here because it is used in macros */
 .macro	xt_6f			/* SP RAM bank correction */
+xt_6f:
 	move.w	EmulationCpuState.spOffset@END.w(%a5),%d1
 	cmp.w	#0xc000,%d1
 	jcc	goon\@
@@ -233,10 +266,10 @@ goon\@:	jmp	(%a6)
 goon\@:	jmp	(%a6)
 	.endm
 
-/* === GB code for startup ========================================================	*/
+/* === GB code for startup ============================================	*/
 
 .macro	xt_70	/* check for restart, set all I/O registers (part 1) */
-				/*	reset:		;at 0x0000	*/
+xt_70:				/*	reset:		;at 0x0000	*/
 	.byte	0xa7		/*		and	a		*/
 	.byte	0xca,0x00,0x0c	/*		jp	z,continue	*/
 				/*					*/
@@ -265,7 +298,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_71	/* set all I/O registers (part 2) */
-				/*	reset1:				*/
+xt_71:				/*	reset1:				*/
 	.byte	0x3e,0xbf	/*		ld	a,0xbf		*/
 	.byte	0xe0,0x19	/*		ldh	(NR24),a	*/
 	.byte	0x3e,0x7f	/*		ld	a,0x7f		*/
@@ -293,7 +326,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_72	/* set all I/O registers (part 3) */
-				/*	reset2:				*/
+xt_72:				/*	reset2:				*/
 	.byte	0x3e,0xf1	/*		ld	a,0xf1		*/
 	.byte	0xe0,0x26	/*		ldh	(NR52),a	*/
 				/*					*/
@@ -322,7 +355,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_73	/* set all I/O registers (part 4), scroller (part 1) */
-				/*	reset3:				*/
+xt_73:				/*	reset3:				*/
 	.byte	0x3e,0x91	/*		ld	a,0x91		*/
 	.byte	0xe0,0x40	/*		ldh	(LCDC),a	*/
 	.byte	0x3e,0x00	/*		ld	a,0x00		*/
@@ -354,7 +387,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_74	/* scroller (part 2) */
-				/*	reset4:				*/
+xt_74:				/*	reset4:				*/
 	.byte	0x11,0x00,0x09	/*		ld	de,tiletab+0x200*/
 	.byte	0xcd,0x00,0x06	/*		call	copydehl	*/
 	.byte	0x11,0x00,0x0a	/*		ld	de,tiletab+0x300*/
@@ -384,7 +417,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_75	/* scroller (part 3), set registers */
-				/*	reset5:				*/
+xt_75:				/*	reset5:				*/
 	.byte	0x21,0x42,0xff	/*		ld	hl,SCY		*/
 				/*	resetwait1:			*/
 	.byte	0xf0,0x44	/*		ldh	a,(LY)		*/
@@ -407,7 +440,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_76	/* copy subroutine for tile table */
-				/*	copydehl:	;at 0x0600	*/
+xt_76:				/*	copydehl:	;at 0x0600	*/
 	.byte	0x06,0x28	/*		ld	b,40		*/
 				/*	copydehlloop:			*/
 	.byte	0x1a		/*		ld	a,(de)		*/
@@ -421,6 +454,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_77
+xt_77:
 				/*	tiletab:			*/
 	.byte	0x1f,0x1f,0x18,0x18,0x30,0x30,0x3f,0x3f
 	.byte	0xc0,0xe0,0x70,0x30,0x30,0x70,0xe0,0x80
@@ -430,6 +464,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_78
+xt_78:
 	.byte	0x00,0x80,0xc0,0xc0,0x60,0x60,0x60,0x60
 	.byte	0x60,0x60,0x60,0x60,0xc1,0xc1,0xc1,0xc1
 	.byte	0xc0,0xc0,0xe0,0xe0,0xb0,0xb0,0x98,0x98
@@ -438,6 +473,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_79
+xt_79:
 	.byte	0x80,0x80,0xc0,0xc1,0xe3,0x67,0x7e,0x3c
 	.byte	0x38,0x70,0xe1,0xc1,0x81,0x01,0x00,0x00
 	.byte	0x60,0x60,0x60,0x60,0xc0,0xc0,0xc0,0xc0
@@ -446,6 +482,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_7a
+xt_7a:
 	.byte	0x83,0x83,0x83,0x83,0x01,0x01,0x00,0x00
 	.byte	0x00,0x00,0x00,0x00,0x81,0xc7,0xfe,0x38
 	.byte	0x61,0x61,0xc1,0xc1,0x83,0x03,0x03,0x03
@@ -454,6 +491,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_7b
+xt_7b:
 	.byte	0x83,0x83,0x83,0x83,0x06,0x06,0x06,0x06
 	.byte	0x00,0x00,0x00,0x01,0x03,0x07,0x0e,0x1c
 	.byte	0x38,0x78,0xfc,0xcc,0x8e,0x06,0x07,0x03
@@ -462,7 +500,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_7c	/* set relevant I/O registers (part 1) */
-				/*	continue:	;at 0c00	*/
+xt_7c:				/*	continue:	;at 0c00	*/
 	.byte	0x78		/*		ld	a,b		*/
 	.byte	0xe0,0x00	/*		ldh	(P1),a		*/
 	.byte	0xf0,0x07	/*		ldh	a,(TAC)		*/
@@ -493,7 +531,7 @@ goon\@:	jmp	(%a6)
 	.endm
 
 .macro	xt_7d	/* set relevant I/O registers (part 2), set up tile map */
-				/*	continue2:			*/
+xt_7d:				/*	continue2:			*/
 	.byte	0xf0,0x4b	/*		ldh	a,(WX)		*/
 	.byte	0xe0,0x4b	/*		ldh	(WX),a		*/
 	.byte	0x7a		/*		ld	a,d		*/
@@ -516,7 +554,7 @@ goon\@:	jmp	(%a6)
 /* === GB code (start with PC and SP set up) ==========================	*/
 
 .macro	xt_7e	/* restart gameboy */
-				/*	restart:			*/
+xt_7e:				/*	restart:			*/
 	.byte	0x31,0xfe,0xff	/*		ld	sp,xxxx		*/
 	.byte	0xc3,0x00,0x01	/*		jp	yyyy		*/
 	.endm
@@ -528,6 +566,7 @@ goon\@:	jmp	(%a6)
 	 * resources have to be a bit smaller than 0x10000 bytes, it must
 	 * be left empty!
          */
+xt_7f:
 	.endm
 
 /* === The end ========================================================	*/

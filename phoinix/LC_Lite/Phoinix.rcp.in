@@ -1,0 +1,296 @@
+///////////////////////////////////////////////////////////////////////////
+//  LC_Lite/Phoinix.rcp.in
+//      Resources for the user interface
+//      (Lite version in english)
+//      Basis by Bodo Wenzel <palm.gb_emu@gmx.de>,
+//      with lots of help by "Jack Hackett" <hjack@usa.com>
+//
+//  NOTE: Please use font coding "iso-8859-1" for this file.
+///////////////////////////////////////////////////////////////////////////
+//
+// Phoinix,
+// Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
+//
+// (c)2000-2007 Bodo Wenzel
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+///////////////////////////////////////////////////////////////////////////
+//  History:
+//
+//  $Log: Phoinix.rcp.in,v $
+//  Revision 1.6  2007/03/17 14:29:44  bodowenzel
+//  New info control for wall clock
+//  Multiple saved state feature implemented
+//  High resolution graphics
+//
+//  Revision 1.5  2005/05/03 08:41:05  bodowenzel
+//  One pixel gap around names of games looks nicer
+//
+//  Revision 1.4  2005/04/03 14:08:33  bodowenzel
+//  Option to save the state for each game
+//
+//  Revision 1.3  2005/02/27 16:37:50  bodowenzel
+//  Enhanced user interface
+//
+//  Revision 1.2  2005/02/17 19:41:47  bodowenzel
+//  Added pace control
+//
+//  Revision 1.1  2005/01/30 19:36:39  bodowenzel
+//  Lite edition added
+//
+///////////////////////////////////////////////////////////////////////////
+//  Notes to translators:
+//
+//  Please don't translate "A", "B", "Select", and "Start" when used as
+//  the names of GB buttons - these are all over the world the same.
+//
+//  Coding of special characters:
+//
+//          New line         = \n
+//
+//  "TM"    Trademark        = \x99
+//  "(C)"   Copyright        = \xa9
+//  "(R)"   Registered TM    = \xae
+//
+//  "x"     Multiply sign    = \xd7
+//  "o"     Bullet point     = \x95
+//  "..."   Ellipsis         = \x85
+//
+//          Arrow left       = \x03
+//          Arrow right      = \x04
+//          Arrow up         = \x05
+//          Arrow down       = \x06
+//
+///////////////////////////////////////////////////////////////////////////
+
+#include "Phoinix.h"
+
+//=== Application launcher ================================================
+
+VERSION "##VERSION##"
+
+// The name and creator ID are set by the build-prc tool.
+
+ICON ID 1000
+BEGIN
+  BITMAP "icon1.bmp"   BPP 1 DENSITY 72
+END
+
+ICON ID 1001
+BEGIN
+  BITMAP "smic1.bmp"   BPP 1 DENSITY 72
+END
+
+// This resource tells the H330's OS that it's high-rez.
+HEX "sKst" ID 1000 0x00 0x00 0x00 0x00
+
+//=== Game Manager ========================================================
+
+FORM ID formIdManager AT (0 0 160 160)
+  MENUID menuIdManager
+BEGIN
+  TITLE "Phoinix"
+
+  TABLE ID tableIdManagerList AT (0 16 160-1-7 tableManagerHeight*11)
+    ROWS tableManagerHeight COLUMNS 1 COLUMNWIDTHS 160-1-7
+  SCROLLBAR ID scrollbarIdManagerList
+    AT (PREVRIGHT+1 PREVTOP 7 PREVHEIGHT)
+
+  LABEL "No games." ID labelIdManagerNoGames
+    AT (CENTER@80 45) NONUSABLE FONT 1
+
+  LABEL "States:" AUTOID AT (CENTER@40-1 85) FONT 1
+  LIST "" ID listIdManagerStates
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+1 5*5+11 AUTO)
+    VISIBLEITEMS 4
+  BUTTON "Delete" ID buttonIdManagerDelete
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+5 AUTO AUTO)
+
+  BUTTON "" ID buttonIdManagerGo
+    AT (RIGHT@160-1 BOTTOM@160-1 80+2 72+2)
+  LABEL "GO!" ID labelIdManagerGo
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+MENU ID menuIdManager
+BEGIN
+  PULLDOWN "Game"
+  BEGIN
+    MENUITEM "Delete\x85" ID menuIdManagerGameDelete "D"
+  END
+
+  PULLDOWN "Options"
+  BEGIN
+    MENUITEM "About\x85" ID menuIdManagerOptionsAbout
+  END
+END
+
+ALERT ID alertIdManagerNoGames
+  INFORMATION
+BEGIN
+  TITLE ""
+  MESSAGE "No games."
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdManagerDeleteGame
+  WARNING
+  DEFAULTBUTTON 1
+BEGIN
+  TITLE ""
+  MESSAGE "Delete \"^1\"?"
+  BUTTONS "OK" "Cancel"
+END
+
+//=== Emulation ===========================================================
+
+FORM ID formIdEmulation AT (0 0 160 160)
+  MENUID menuIdEmulation
+BEGIN
+  /* NOTE:
+   * The controls are made usable and placed at runtime.
+   */
+  CHECKBOX "Pause" ID checkboxIdEmulationPause
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  CHECKBOX "Boost" ID checkboxIdEmulationBoost
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  BUTTON "Select" ID buttonIdEmulationSelect
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "Start"  ID buttonIdEmulationStart
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "B"      ID buttonIdEmulationB
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "A"      ID buttonIdEmulationA
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "" ID buttonIdEmulationTime
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationBattery
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationPace
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationClock
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+END
+
+MENU ID menuIdEmulation
+BEGIN
+  PULLDOWN "Game"
+  BEGIN
+    MENUITEM "All keys" ID menuIdEmulationGamePressAllKeys "A"
+    MENUITEM SEPARATOR
+    MENUITEM "Boost"    ID menuIdEmulationGameBoost        "B"
+    MENUITEM "Pause"    ID menuIdEmulationGamePause        "P"
+    MENUITEM "Reset"    ID menuIdEmulationGameReset
+    MENUITEM SEPARATOR
+    MENUITEM "Quit"     ID menuIdEmulationGameQuit
+  END
+
+  PULLDOWN "State"
+  BEGIN
+    MENUITEM "Save"     ID menuIdEmulationStateSave "S"
+    MENUITEM "Load\x85" ID menuIdEmulationStateLoad "L"
+  END
+
+  PULLDOWN "Options"
+  BEGIN
+    MENUITEM "About\x85" ID menuIdEmulationOptionsAbout
+  END
+END
+
+FORM ID formIdLoadState AT (2 BOTTOM@160-2 160-2-2 84)
+  MODAL
+BEGIN
+  LIST "" ID listIdLoadState AT (CENTER@40-2-2-1 9 5*5+11 AUTO)
+    VISIBLEITEMS 6
+
+  BUTTON "" ID buttonIdLoadState
+    AT (RIGHT@160-2-2-1-4 BOTTOM@84-1-4 80+2 72+2)
+  LABEL "Cancel" ID labelIdLoadState
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+//=== About ===============================================================
+
+STRING ID helpIdAbout
+  "Phoinix v.##VERSION## (Lite)\n"\
+  "Build ##BUILD##\n"\
+  "\n"\
+  "Gameboy\x99 Emulator\n"\
+  "Free software under GPL\n"\
+  "\n"\
+  "\xa9 ##COPYRIGHT##\n"\
+  "phoinix.sourceforge.net\n"\
+  "palm.gb_emu@gmx.de"
+
+//=== Miscellaneous =======================================================
+
+FORM ID formIdBusy AT (CENTER@80 CENTER@80 35 21)
+  MODAL
+BEGIN
+  LABEL "Busy\x85" AUTOID AT (5 5)
+END
+
+ALERT ID alertIdError
+  ERROR
+BEGIN
+  TITLE "Error"
+  MESSAGE "^1:\n^2."
+  BUTTONS "OK"
+END
+
+// This string table contains all error messages that can be shown via
+// the above alert.
+// ---- To text editors:
+// The maximum length of each string is miscErrorStringMaxLength
+// (99 characters).
+// ---- To programmers:
+// Check the strings carefully against the named constants in the
+// source file 'misc.h'!
+STRINGTABLE ID stblIdError "" ""
+  /* actions when errors occur: */
+    "Initialization"
+    "Resume"
+    "Games' list"
+    "VFS"
+    "OS"
+    "Emulator"
+    "Deleting"
+    "Renaming"
+    "Moving"
+  /* error that occur: */
+    "memory full"
+    "screen not supported"
+    "OS not supported"
+    "import incomplete"
+    "can't be searched"
+    "state not saved"
+    "state not loaded"
+    "can't save, moved to \"%s\""
+    "runtime error"
+    "can't run"
+    "file not found"
+    "no Phoinix directory"
+    "bad characters in name"
+    "memory read-only"
+    "storage read-only"
+    "exists already"
+    "write error"
+    "read error"
+    "read error, new state"
+    "volume full"
+
+//=== The end =============================================================

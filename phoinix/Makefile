@@ -7,7 +7,7 @@
 # Phoinix,
 # Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
 #
-# (c)2000-2004 Bodo Wenzel
+# (c)2000-2007 Bodo Wenzel
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +21,47 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 ###########################################################################
 #  History:
 #
-#  $Log$
+#  $Log: Makefile,v $
+#  Revision 1.19  2007/02/27 13:28:11  bodowenzel
+#  High resolution graphics
+#
+#  Revision 1.18  2006/10/23 15:39:15  bodowenzel
+#  Better compiling of eggs helper program
+#
+#  Revision 1.17  2006/04/25 18:51:40  bodowenzel
+#  Corrections around the easter egg
+#
+#  Revision 1.16  2005/05/03 08:38:22  bodowenzel
+#  Enable compilation from scratch
+#
+#  Revision 1.15  2005/02/27 16:38:24  bodowenzel
+#  Added module Eggs for easter eggs
+#
+#  Revision 1.14  2004/12/28 13:56:31  bodowenzel
+#  Split up all C-Code to multi-segmented
+#
+#  Revision 1.13  2004/10/24 09:11:05  bodowenzel
+#  New button mapping
+#
+#  Revision 1.12  2004/10/18 17:48:51  bodowenzel
+#  Dropped macro LITE, no need to maintain smaller code
+#
+#  Revision 1.11  2004/01/11 19:04:54  bodowenzel
+#  Saving bitmaps again
+#  New COPYRIGHT and ADDRESS placeholder
+#  Added module 'ram' for on-board memory
+#
+#  Revision 1.10  2003/04/27 09:36:17  bodowenzel
+#  Added Lite edition
+#
+#  Revision 1.9  2003/04/12 15:23:33  bodowenzel
+#  Added GlueLib
+#
 #  Revision 1.8  2002/12/07 08:57:27  bodowenzel
 #  Tweaked button mapping form like proposed by HJ
 #
@@ -82,10 +117,10 @@ LC_NAME=	$(LC_DIR)/$(NAME)
 all:
 	@for d in LC_* ; do $(MAKE) LC_DIR=$$d prc ; done
 
-prc:	$(LC_DIR)/$(NAME).prc
+prc:	$(LC_NAME).prc
 
 clean:
-	rm -f $(NAME) *.d *.o *~ LC_*/*.rcp LC_*/*.ro LC_*/*~
+	rm -f $(NAME) hidden.inc *.d *.o *~ LC_*/*.rcp LC_*/*.ro LC_*/*~
 
 dist:
 	@for d in LC_* ; do $(MAKE) LC_DIR=$$d zip ; done
@@ -106,7 +141,7 @@ address:
 
 ### Programs to use #######################################################
 
-CC=		m68k-palmos-gcc -palmos4
+CC=		m68k-palmos-gcc
 CPPFLAGS=	-Wall
 CFLAGS=		-Wall -O2 -g
 ASFLAGS=	-Wall
@@ -121,28 +156,24 @@ TAR=		tar
 
 ### Lists of files ########################################################
 
-C_SOURCES=	$(NAME).c misc.c prefs.c manager.c states.c vfs.c	\
-		emulation_c.c						\
-		memory_c.c video_c.c
+C_SOURCES=	$(NAME).c misc.c prefs.c manager.c eggs.c states.c	\
+		ram.c vfs.c emulation_c.c memory_c.c video_c.c
 
-S_SOURCES=	emulation_s.S gbemu.S					\
-		memory_s.S video_s.S
+S_SOURCES=	emulation_s.S gbemu.S memory_s.S video_s.S sections.S
 
-H_SOURCES=	$(NAME).h misc.h prefs.h manager.h states.h vfs.h	\
-		emulation.h gbemu.h					\
-		memory.h video.h
+H_SOURCES=	$(NAME).h misc.h prefs.h manager.h eggs.h states.h	\
+		ram.h vfs.h emulation.h gbemu.h memory.h video.h	\
+		sections.h
 
 INC_SOURCES=	gbemu_op.inc gbemu_cb.inc gbemu_rw.inc gbemu_io.inc	\
 		gbemu_xt.inc
 
-RSRC_SOURCES=	buttons.fnt						\
-		bitmaps/icon1.bmp bitmaps/icon2.bmp			\
-		bitmaps/icon4.bmp bitmaps/icon8.bmp			\
+RSRC_SOURCES=	bitmaps/icon1.bmp bitmaps/icon2.bmp			\
+		bitmaps/icon8.bmp bitmaps/icon8hr.bmp			\
 		bitmaps/smic1.bmp bitmaps/smic2.bmp			\
-		bitmaps/smic4.bmp bitmaps/smic8.bmp			\
-		bitmaps/$(NAME).bmp					\
-		bitmaps/eggtimer.bmp					\
-		bitmaps/button1.bmp bitmaps/button2.bmp
+		bitmaps/smic8.bmp bitmaps/smic8hr.bmp			\
+		bitmaps/$(NAME).bmp bitmaps/$(NAME)hr.bmp		\
+		bitmaps/eggtimer.bmp bitmaps/eggtimerhr.bmp
 
 OBJS=		$(C_SOURCES:.c=.o) $(S_SOURCES:.S=.o)
 
@@ -150,7 +181,20 @@ FILES2TGZ=	COPYING README Makefile					\
 		LC_*/GPL.txt LC_*/$(NAME).txt				\
 		$(C_SOURCES) $(S_SOURCES) $(H_SOURCES) $(INC_SOURCES)	\
 		LC_*/$(NAME).rcp.in $(RSRC_SOURCES)			\
-		$(NAME).def $(NAME).ld version build copyright address
+		$(NAME).def $(NAME).ld					\
+		version build copyright address
+
+### Hidden game ###########################################################
+
+# The file hidden.gb doesn't have to exist.
+hidden.inc:	eggs
+	./eggs hidden.gb $@
+
+# This line is needed for a successful make from scratch:
+gbemu.d:	hidden.inc
+
+eggs:		eggs.d
+	cc eggs.c -o eggs
 
 ### Compiling #############################################################
 
@@ -161,29 +205,32 @@ $(NAME):	$(OBJS) $(NAME).ld
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 	echo "$$((`cat build`+1))" > build
 
-%.d: %.c
-	set -e; $(CC) -MM $(CPPFLAGS) $< \
-	  | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@ ; \
+%.d:		%.c
+	set -e; $(CC) -MM $(CPPFLAGS) $<				\
+	  | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@ ;			\
 	  [ -s $@ ] || rm -f $@
 
 include $(C_SOURCES:.c=.d)
 
-%.d: %.S
-	set -e; $(CC) -MM $(CPPFLAGS) $< \
-	  | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@ ; \
+%.o:		%.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+%.d:		%.S
+	set -e; $(CC) -MM $(CPPFLAGS) $<				\
+	  | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@ ;			\
 	  [ -s $@ ] || rm -f $@
 
 include $(S_SOURCES:.S=.d)
 
+%.o:		%.S
+	$(CC) $(ASFLAGS) $(CPPFLAGS) -c $< -o $@
+
 $(LC_NAME).ro:	$(LC_NAME).rcp.in $(NAME).h $(RSRC_SOURCES)		\
 		version build copyright address
-	sed "s/##VERSION##/`cat version`/g"				\
-	  < $(LC_NAME).rcp.in |						\
-	sed "s/##BUILD##/`cat build`/g"					\
-	  |								\
-	sed "s/##COPYRIGHT##/`cat copyright`/g"				\
-	  |								\
-	sed "s/##ADDRESS##/`cat address`/g"				\
+	sed "s/##VERSION##/`cat version`/g" < $(LC_NAME).rcp.in		\
+	  | sed "s/##BUILD##/`cat build`/g"				\
+	  | sed "s/##COPYRIGHT##/`cat copyright`/g"			\
+	  | sed "s/##ADDRESS##/`cat address`/g"				\
 	  > $(LC_NAME).rcp
 	$(RC) $(RC_FLAGS) -o $@ $(LC_NAME).rcp
 
@@ -191,7 +238,7 @@ $(LC_NAME).ro:	$(LC_NAME).rcp.in $(NAME).h $(RSRC_SOURCES)		\
 
 $(LC_DIR)/$(RELEASE).zip:	$(LC_DIR)/GPL.txt $(LC_NAME).txt	\
 				$(LC_NAME).prc
-	cd $(LC_DIR) ; \
+	cd $(LC_DIR) ;							\
 	  $(ZIP) $(RELEASE).zip GPL.txt $(NAME).txt $(NAME).prc
 
 $(RELEASE).tgz:	$(FILES2TGZ)

@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2007 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,61 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: Phoinix.h,v $
+ *  Revision 1.22  2007/07/01 10:12:51  bodowenzel
+ *  Cleanup
+ *
+ *  Revision 1.21  2007/02/03 14:42:18  bodowenzel
+ *  New info control for wall clock
+ *  Multiple saved state feature implemented
+ *
+ *  Revision 1.20  2005/04/03 14:08:33  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.19  2005/02/27 16:37:51  bodowenzel
+ *  Enhanced user interface
+ *
+ *  Revision 1.18  2005/02/17 19:42:35  bodowenzel
+ *  Added pace control
+ *
+ *  Revision 1.17  2005/01/30 19:35:26  bodowenzel
+ *  Removed support for VFS mount and unmount
+ *
+ *  Revision 1.16  2005/01/28 17:35:13  bodowenzel
+ *  Manager form uses a scrollable table now for the list of games
+ *
+ *  Revision 1.15  2004/12/28 13:58:10  bodowenzel
+ *  Menu command to press all keys
+ *  Support for devices without direct screen access
+ *
+ *  Revision 1.14  2004/12/02 20:01:22  bodowenzel
+ *  New configurable screen layout
+ *
+ *  Revision 1.13  2004/10/24 09:11:05  bodowenzel
+ *  New button mapping
+ *
+ *  Revision 1.12  2004/06/20 14:23:20  bodowenzel
+ *  VFS mount and unmount support
+ *
+ *  Revision 1.11  2004/06/11 16:14:19  bodowenzel
+ *  Enhanced error reporting with MiscPostError()
+ *
+ *  Revision 1.10  2004/03/02 19:24:16  bodowenzel
+ *  Changed to new error function MiscShowError()
+ *
+ *  Revision 1.9  2004/01/11 19:07:14  bodowenzel
+ *  Corrected copyright
+ *
+ *  Revision 1.8  2003/04/27 09:36:18  bodowenzel
+ *  Added Lite edition
+ *
+ *  Revision 1.7  2002/12/07 08:57:27  bodowenzel
+ *  Tweaked button mapping form like proposed by HJ
+ *
  *  Revision 1.6  2002/11/02 15:53:29  bodowenzel
  *  Reduced number of button bitmaps to one
  *
@@ -55,6 +105,19 @@
  ************************************************************************
  */
 
+/*************************************************************************
+ * Global config for varios devices
+ *************************************************************************/
+//#define handera
+//#define alphasmart
+//#define sonyclie
+//#define fossil
+//#define palmgamepad
+//#define vfs			// not implemented
+//*************************************************************************
+
+
+
 /* === PilRC is a bit limited... ======================================	*/
 
 /* from PalmOS.h, checked when included by the C compiler: */
@@ -71,150 +134,192 @@
 
 #define dmDBNameLength 32
 
-#define fntAppFontCustomBase 128
+#define firstUserEvent 0x6000
 
 /* === Application specific ===========================================	*/
 
-#define alertIdStartupIncompatibleRom    (1001)
-#define alertIdStartupIncompatibleScreen (1002)
+/* PilRC can't handle enums, even if its values aren't necessary */
+#define phoinixErrorEvent   (firstUserEvent + 0)
 
-#define formIdAbout     (1100)
-#define bmpIdAbout      (1111)
-#define buttonIdAboutOk (1121)
+/* === Game Manager ===================================================	*/
 
-#define helpIdAbout (1101)
+#define formIdManager          (1000)
+#define tableIdManagerList     (1011)
+#define tableManagerHeight     (6)
+#define labelIdManagerNoGames  (1012)
+#define scrollbarIdManagerList (1021)
+#define listIdManagerStates    (1031)
+#define buttonIdManagerDelete  (1032)
+#define buttonIdManagerGo      (1041)
+#define labelIdManagerGo       (1042)
 
-#define fontIdButtonMapping (1200)
-#define fontButtonMapping   (fntAppFontCustomBase+1)
+#define menuIdManager                     (1100)
+#define menuIdManagerGameDelete           (1111)
+#define menuIdManagerGameDetails          (1112)
+#define menuIdManagerOptionsEmulation     (1121)
+#define menuIdManagerOptionsButtonMapping (1122)
+#define menuIdManagerOptionsScreenLayout  (1123)
+#define menuIdManagerOptionsTips          (1124)
+#define menuIdManagerOptionsAbout         (1125)
 
-/* NOTE: the increment between listId* and popupId* must be 10! */
-#define formIdButtonMapping         (1200)
-#define bmpIdButtonMapping1         (1211)
-#define bmpIdButtonMapping2         (1212)
-#define popupIdButtonMappingDb      (1213)
-#define popupIdButtonMappingAb      (1223)
-#define popupIdButtonMappingUp      (1233)
-#define popupIdButtonMappingDn      (1243)
-#define popupIdButtonMappingTd      (1253)
-#define popupIdButtonMappingMm      (1263)
-#define listIdButtonMappingDb       (1214)
-#define listIdButtonMappingAb       (1224)
-#define listIdButtonMappingUp       (1234)
-#define listIdButtonMappingDn       (1244)
-#define listIdButtonMappingTd       (1254)
-#define listIdButtonMappingMm       (1264)
-#define buttonIdButtonMappingOk     (1271)
-#define buttonIdButtonMappingCancel (1272)
+#define helpIdManager (1001)
 
-#define helpIdButtonMapping (1201)
+#define alertIdManagerNoGames (1500)
+#define helpIdManagerNoGames  (1501)
 
-#define formIdNoGame (1300)
+#define alertIdManagerDeleteGame (1600)
 
-#define menuIdNoGame             (1310)
-#define menuIdNoGameOptionsTips  (1321)
-#define menuIdNoGameOptionsAbout (1322)
+/* === Emulation ======================================================	*/
 
-#define helpIdNoGame (1301)
+/* PilRC can't handle enum's */
+#define offsetEmulationNone    (0)
+#define offsetEmulationMin     (1) /* first */
+#define offsetEmulationPause   (1)
+#define offsetEmulationBoost   (2)
+#define offsetEmulationSelect  (3)
+#define offsetEmulationStart   (4)
+#define offsetEmulationB       (5)
+#define offsetEmulationA       (6)
+#define offsetEmulationTime    (7)
+#define offsetEmulationBattery (8)
+#define offsetEmulationPace    (9)
+#define offsetEmulationClock   (10)
+#define offsetEmulationMax     (11) /* last + 1 */
 
-#define alertIdManagerListError      (1401)
-#define alertIdManagerListIncomplete (1402)
+#define formIdEmulation          (2000)
+#define ctlIdEmulation           (2011) /* used +1 .. +9 */
+#define checkboxIdEmulationPause (ctlIdEmulation + offsetEmulationPause)
+#define checkboxIdEmulationBoost (ctlIdEmulation + offsetEmulationBoost)
+#define buttonIdEmulationSelect  (ctlIdEmulation + offsetEmulationSelect)
+#define buttonIdEmulationStart   (ctlIdEmulation + offsetEmulationStart)
+#define buttonIdEmulationB       (ctlIdEmulation + offsetEmulationB)
+#define buttonIdEmulationA       (ctlIdEmulation + offsetEmulationA)
+#define buttonIdEmulationTime    (ctlIdEmulation + offsetEmulationTime)
+#define buttonIdEmulationBattery (ctlIdEmulation + offsetEmulationBattery)
+#define buttonIdEmulationPace    (ctlIdEmulation + offsetEmulationPace)
+#define buttonIdEmulationClock   (ctlIdEmulation + offsetEmulationClock)
+#define ctlOffsetEmulation       (40)
 
-#define formIdManager          (1500)
-#define popupIdManagerName     (1521)
-#define popupManagerNameHeight (6)
-#define listIdManagerName      (1522)
-#define fieldIdManagerName     (1523)
-#define popupIdManagerLocation (1538)
-#define listIdManagerLocation  (1539)
-#define labelIdManagerLocation (1540)
-#define labelIdManagerType     (1541)
-#define labelIdManagerRom      (1542)
-#define labelIdManagerRam      (1543)
-#define buttonIdManagerGo      (1562)
+#define menuIdEmulation                     (2100)
+#define menuIdEmulationGamePressAllKeys     (2111)
+#define menuIdEmulationGamePause            (2112)
+#define menuIdEmulationGameBoost            (2113)
+#define menuIdEmulationGameReset            (2114)
+#define menuIdEmulationGameQuit             (2115)
+#define menuIdEmulationStateSave            (2121)
+#define menuIdEmulationStateLoad            (2122)
+#define menuIdEmulationOptionsEmulation     (2131)
+#define menuIdEmulationOptionsButtonMapping (2132)
+#define menuIdEmulationOptionsScreenLayout  (2133)
+#define menuIdEmulationOptionsTips          (2134)
+#define menuIdEmulationOptionsAbout         (2135)
 
-#define menuIdManager                     (1570)
-#define menuIdManagerActionsDeleteGame    (1584)
-#define menuIdManagerOptionsButtonMapping (1591)
-#define menuIdManagerOptionsTips          (1593)
-#define menuIdManagerOptionsAbout         (1594)
+#define helpIdEmulation (2001)
 
-#define helpIdManager (1501)
+#define formIdLoadState   (2200)
+#define listIdLoadState   (2211)
+#define buttonIdLoadState (2221)
+#define labelIdLoadState  (2222)
 
-#define alertIdManagerDeleteGame  (1611)
-#define alertIdManagerDeleteError (1612)
-#define alertIdManagerRenameError (1613)
-#define alertIdManagerCantRun     (1614)
+#define helpIdLoadState (2201)
 
-#define stringIdManagerGameError   (1621)
-#define stringIdManagerGameUnknown (1622)
-#define stringIdManagerGameKBytes  (1623)
-#define stringIdManagerGameMbc2    (1624)
+/* === Game Details ===================================================	*/
 
-#define alertIdStatesLoadError (1701)
-#define alertIdStatesSaveError (1702)
+#define formIdGameDetails          (5100)
+#define fieldIdGameDetailsName     (5111)
+#define popupIdGameDetailsLocation (5121)
+#define listIdGameDetailsLocation  (5122)
+#define labelIdGameDetailsCode     (5131)
+#define labelIdGameDetailsType     (5141)
+#define labelIdGameDetailsSize     (5151)
+#define buttonIdGameDetailsOk      (5161)
+#define buttonIdGameDetailsCancel  (5162)
 
-#define formIdEmulation         (1800)
-#define buttonIdEmulationSelect (1811)
-#define buttonIdEmulationStart  (1812)
-#define popupIdEmulationInfo    (1821)
-#define listIdEmulationInfo     (1822)
-#define checkboxIdEmulationRun  (1831)
+#define helpIdGameDetails (5101)
 
-#define formIdEmulationScreen  (1890)
-#define gadgetIdEmulationSmall (1891)
-#define gadgetIdEmulationH330  (1892)
+#define stblIdGameDetailsType (5151)
 
-#define menuIdEmulation                     (1840)
-#define menuIdEmulationGameQuit             (1841)
-#define menuIdEmulationGameReset            (1842)
-#define menuIdEmulationOptionsButtonMapping (1851)
-#define menuIdEmulationOptionsTips          (1852)
-#define menuIdEmulationOptionsAbout         (1853)
+/* === Emulation Options ==============================================	*/
 
-#define helpIdEmulation (1801)
+#define formIdEmulationOptions              (5200)
+#define checkboxIdEmulationOptionsSaveState (5211)
+#define labelIdEmulationOptionsMaxFs        (5221)
+#define buttonIdEmulationOptionsMaxFsUp     (5222)
+#define buttonIdEmulationOptionsMaxFsDown   (5223)
+#define labelIdEmulationOptionsBoost        (5231)
+#define buttonIdEmulationOptionsBoostUp     (5232)
+#define buttonIdEmulationOptionsBoostDown   (5233)
+#define buttonIdEmulationOptionsOk          (5241)
+#define buttonIdEmulationOptionsCancel      (5242)
 
-#define alertIdEmulationSetupError (1861)
-#define alertIdEmulationRunError   (1862)
+#define helpIdEmulationOptions (5201)
 
-#define alertIdVFS                       (1970)
-#define stringerrNone                    (1971)
-#define stringvfsErrBufferOverflow       (1972)
-#define stringvfsErrFileGeneric          (1973)
-#define stringvfsErrFileBadRef           (1974)
-#define stringvfsErrFileStillOpen        (1975)
-#define stringvfsErrFilePermissionDenied (1976)
-#define stringvfsErrFileAlreadyExists    (1977)
-#define stringvfsErrFileEOF              (1978)
-#define stringvfsErrFileNotFound         (1979)
-#define stringvfsErrVolumeBadRef         (1980)
-#define stringvfsErrVolumeStillMounted   (1981)
-#define stringvfsErrNoFileSystem         (1982)
-#define stringvfsErrBadData              (1983)
-#define stringvfsErrDirNotEmpty          (1984)
-#define stringvfsErrBadName              (1985)
-#define stringvfsErrVolumeFull           (1986)
-#define stringvfsErrUnimplemented        (1987)
-#define stringvfsErrNotADirectory        (1988)
-#define stringvfsErrIsADirectory         (1989)
-#define stringvfsErrDirectoryNotFound    (1990)
-#define stringvfsErrNameShortened        (1991)
-#define stringdmErrAlreadyExists         (1992)
-#define stringvfsErrUnknown              (1993)
+/* === Button Mapping =================================================	*/
 
-/* vfs Phoinix internal error messages */
-#define stringCreateDir                  (2000)
-#define stringExportDb                   (2001)
-#define stringFetchHead                  (2002)
-#define stringScanForGames               (2003)
-#define stringImportDb                   (2004)
-#define stringMoveDb                     (2005)
-#define stringDeleteDb                   (2006)
+/* PilRC can't handle enum's */
+#define offsetButtonMappingUp     (0)
+#define offsetButtonMappingDown   (1)
+#define offsetButtonMappingLeft   (2)
+#define offsetButtonMappingRight  (3)
+#define offsetButtonMappingSelect (4)
+#define offsetButtonMappingStart  (5)
+#define offsetButtonMappingB      (6)
+#define offsetButtonMappingA      (7)
 
-#define alertIdOverwrite                 (2007)
+#define formIdButtonMapping                   (5300)
+#define checkboxIdButtonMappingHoldVertical   (5311)
+#define checkboxIdButtonMappingHoldHorizontal (5312)
+#define selIdButtonMapping                    (5321) /* used +0 .. +7 */
+/* PilRC can't handle line-splitted #define's, these lines are loooong */
+#define selIdButtonMappingUp     (selIdButtonMapping + offsetButtonMappingUp)
+#define selIdButtonMappingDown   (selIdButtonMapping + offsetButtonMappingDown)
+#define selIdButtonMappingLeft   (selIdButtonMapping + offsetButtonMappingLeft)
+#define selIdButtonMappingRight  (selIdButtonMapping + offsetButtonMappingRight)
+#define selIdButtonMappingSelect (selIdButtonMapping + offsetButtonMappingSelect)
+#define selIdButtonMappingStart  (selIdButtonMapping + offsetButtonMappingStart)
+#define selIdButtonMappingB      (selIdButtonMapping + offsetButtonMappingB)
+#define selIdButtonMappingA      (selIdButtonMapping + offsetButtonMappingA)
+#define buttonIdButtonMappingOk               (5331)
+#define buttonIdButtonMappingCancel           (5332)
 
-#define alertIdGeneric                   (2009)
+#define helpIdButtonMapping (5301)
 
-#define formIdBusy (5000)
-#define bmpIdBusy  (5001)
+#define formIdButtonMappingSample         (5350)
+#define buttonIdButtonMappingSampleOk     (5361)
+#define buttonIdButtonMappingSampleCancel (5362)
+
+#define helpIdButtonMappingSample (5351)
+
+/* === Screen Layout ==================================================	*/
+
+#define formIdScreenLayout         (5400)
+#define popupIdScreenLayout        (5411) /* used +0 .. +3 */
+#define listIdScreenLayout         (5421)
+#define listScreenLayoutOffset     (8)
+#define buttonIdScreenLayoutOk     (5431)
+#define buttonIdScreenLayoutCancel (5432)
+
+#define helpIdScreenLayout (5401)
+
+/* === About ==========================================================	*/
+
+#define formIdAbout     (5500)
+#define bmpIdAbout      (5511)
+#define buttonIdAboutOk (5521)
+
+#define helpIdAbout (5501)
+
+/* === VFS ============================================================	*/
+
+#define alertIdOverwrite (8100)
+
+/* === Miscellaneous ==================================================	*/
+
+#define formIdBusy (8200)
+#define bmpIdBusy  (8211)
+
+#define alertIdError (8300)
+#define helpIdError  (8301)
+#define stblIdError  (8302)
 
 /* === The end ========================================================	*/

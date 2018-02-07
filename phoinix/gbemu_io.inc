@@ -8,7 +8,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2006 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: gbemu_io.inc,v $
+ *  Revision 1.6  2006/10/23 15:38:42  bodowenzel
+ *  Comment to a2 corrected
+ *
+ *  Revision 1.5  2005/05/03 08:39:11  bodowenzel
+ *  Moved coldReset, ime, im and error into EmulationCpuState
+ *
+ *  Revision 1.4  2005/01/30 19:34:07  bodowenzel
+ *  Added labels for all combo parts
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -54,9 +66,7 @@
  *	d1.b	(io_rd: must be preserved)
  *	d2.b	(io_rd: must be preserved)
  *	a2	68000 base memory address (used after io_rd)
- *	a2	68000 base memory address
- *	a3	68000 memory address (used after io_rd,
- *		  also as "io_lea")
+ *	a3	68000 memory address (used after io_rd, also as "io_lea")
  *	a6	68000 return address
  * ======================================================================
  */
@@ -65,6 +75,7 @@
 
 .macro	in_std	num		/* standard read */
 .macro	in_\num
+in_\num:
 	lea	EmulationIo+0x0100@END.w(%a5),%a2
 	lea	0x\num-0x0100(%a2),%a3
 	jmp	(%a6)
@@ -73,6 +84,7 @@
 
 .macro	out_std	num		/* standard write */
 .macro	out_\num
+out_\num:
 	move.b	%d0,EmulationIo+0x\num@END.w(%a5)
 	jmp	(%a6)		/* no special treatment */
 	.endm
@@ -80,18 +92,21 @@
 
 .macro	out_nul	num
 .macro	out_\num		/* write ignored */
+out_\num:
 	jmp	(%a6)
 	.endm
 	.endm
 
 .macro	in_jmp	num
 .macro	in_\num
+in_\num:
 	jmp	0.l		/* jump vector to external function */
 	.endm
 	.endm
 
 .macro	out_jmp	num
 .macro	out_\num
+out_\num:
 	jmp	0.l		/* jump vector to external function */
 	.endm
 	.endm
@@ -99,11 +114,13 @@
 /* === And now the actual macros... ===================================	*/
 
 .macro	in_00			/* P1 joypad */
+in_00:
 	move.l	EmulationJoypadPtr@END.w(%a5),%a3
 	jmp	(%a6)
 	.endm
 
 .macro	out_00			/* P1 joypad */
+out_00:
 	lsr.b	#4,%d0
 	and.w	#3,%d0
 	lea	EmulationJoypad@END.w(%a5),%a3
@@ -115,6 +132,7 @@
 	in_std	01		/* SB serial transfer data */
 
 .macro	out_01			/* SB serial transfer data */
+out_01:
 	jmp	(%a6)
 io02m:	bclr	#7,%d0
 	bset	#3,EmulationIo.if_@END.w(%a5)
@@ -124,6 +142,7 @@ io02m:	bclr	#7,%d0
 	in_std	02		/* SC serial transfer control */
 
 .macro	out_02			/* SC serial transfer control */
+out_02:
 	btst	#0,%d0
 	bne	io02m
 io02q:	move.b	%d0,EmulationIo+0x02@END.w(%a5)
@@ -134,21 +153,25 @@ io02q:	move.b	%d0,EmulationIo+0x02@END.w(%a5)
 	out_nul	03
 
 .macro	in_04			/* DIV divider */
+in_04:
 	lea	VideoTimerDiv@END.w(%a5),%a3
 	jmp	(%a6)
 	.endm
 
 .macro	out_04			/* DIV divider */
+out_04:
 	move.w	#0,VideoTimerDiv@END.w(%a5)
 	jmp	(%a6)
 	.endm
 
 .macro	in_05			/* TIMA timer counter */
+in_05:
 	lea	VideoTimerTima@END.w(%a5),%a3
 	jmp	(%a6)
 	.endm
 
 .macro	out_05			/* TIMA timer counter */
+out_05:
 	lea	VideoTimerTima@END.w(%a5),%a3
 	move.w	#0,(%a3)
 	move.b	%d0,(%a3)
@@ -261,6 +284,7 @@ io02q:	move.b	%d0,EmulationIo+0x02@END.w(%a5)
 	out_jmp	43		/* SCX scroll X */
 
 .macro	in_44			/* LY LCD Y coordinate */
+in_44:
 	moveq	#143-1-0x100,%d0
 	sub.w	VideoLyPrv@END.w(%a5),%d0
 	lea	EmulationIo.ly@END.w(%a5),%a3
@@ -269,6 +293,7 @@ io02q:	move.b	%d0,EmulationIo+0x02@END.w(%a5)
 	.endm
 
 .macro	out_44			/* LY LCD Y coordinate */
+out_44:
 	/* it's not clear if it can be reset by writing... */
 	jmp	(%a6)
 	.endm
@@ -279,6 +304,7 @@ io02q:	move.b	%d0,EmulationIo+0x02@END.w(%a5)
 	in_std	46
 
 .macro	out_46			/* DMA transfer and start address */
+out_46:
 	pea	(%a6)
 	clr.b	%d1
 	move.l	2+indexToAddress(gbemuJmpIoWrDma),%a6
@@ -328,9 +354,10 @@ jump\@:	jmp	offsetRd+dontOptHi(%a4)
 	in_std	ff		/* IE interrupt enable */
 
 .macro	out_ff			/* IE interrupt enable */
+out_ff:
 	move.b	%d0,EmulationIo.ie@END.w(%a5)
-	and.b	EmulationIntIme@END.w(%a5),%d0
-	move.b	%d0,EmulationIntIm@END.w(%a5)
+	and.b	EmulationCpuState.ime@END.w(%a5),%d0
+	move.b	%d0,EmulationCpuState.im@END.w(%a5)
 	pea	(%a6)
 	jmp	indexToAddress(gbemuCodeCheckInt)
 	.endm

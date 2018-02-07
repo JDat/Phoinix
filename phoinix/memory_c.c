@@ -7,7 +7,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2005 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,45 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: memory_c.c,v $
+ *  Revision 1.14  2005/05/26 19:35:47  bodowenzel
+ *  Moved game's info into game's entry, removing MemoryMbcInfo
+ *
+ *  Revision 1.13  2005/04/03 14:08:34  bodowenzel
+ *  Option to save the state for each game
+ *
+ *  Revision 1.12  2005/01/29 10:26:08  bodowenzel
+ *  Manager form uses a scrollable table now for the list of games
+ *
+ *  Revision 1.11  2004/12/28 13:56:35  bodowenzel
+ *  Split up all C-Code to multi-segmented
+ *
+ *  Revision 1.10  2004/10/18 17:48:51  bodowenzel
+ *  Dropped macro LITE, no need to maintain smaller code
+ *
+ *  Revision 1.9  2004/04/13 19:44:22  bodowenzel
+ *  Checking bank sizes now at start of game
+ *
+ *  Revision 1.8  2004/04/05 21:56:55  bodowenzel
+ *  VFS review and its consequences
+ *
+ *  Revision 1.7  2004/03/02 19:24:16  bodowenzel
+ *  Changed to new error function MiscShowError()
+ *
+ *  Revision 1.6  2004/01/11 19:10:56  bodowenzel
+ *  Added module 'ram' for on-board memory
+ *  Start of VFS review and correction
+ *
+ *  Revision 1.5  2003/04/27 09:36:18  bodowenzel
+ *  Added Lite edition
+ *
+ *  Revision 1.4  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.3  2002/05/10 15:17:39  bodowenzel
  *  Till's VFS contribution
  *
@@ -52,10 +86,12 @@
 
 #include <PalmOS.h>
 
-#include "Phoinix.h"
 #include "memory.h"
+
+#include "Phoinix.h"
 #include "prefs.h"
 #include "states.h"
+#include "ram.h"
 #include "vfs.h"
 #include "emulation.h"
 #include "gbemu.h"
@@ -70,7 +106,6 @@
 typedef struct {
   Int16         code;  /* byte in GB code */
   MemoryMbcType mbc;
-  const Char    *name;
 } CartridgeType;
 
 typedef struct { /* pointer to functions */
@@ -83,40 +118,27 @@ typedef struct { /* pointer to functions */
 
 /* === Global and static variables ====================================	*/
 
-MemoryMbcInfoType MemoryMbcInfo;
-
 static const CartridgeType CartridgesKnown[] = {
-  /* look into the resource about the maximum length of the name! */
-  { 0x00, memoryMbcDefault, "ROM" },
-  { 0x01, memoryMbc1,       "MBC1" },
-  { 0x02, memoryMbc1,       "MBC1+RAM" },
-  { 0x03, memoryMbc1,       "MBC1+RAM+BAT" },
-  { 0x05, memoryMbc2,       "MBC2" },
-  { 0x06, memoryMbc2,       "MBC2+BAT" },
-  { 0x08, memoryMbcDefault, "RAM" },
-  { 0x09, memoryMbcDefault, "RAM+BAT" },
-  { 0x0b, memoryMbcUnknown, "MMM01" },
-  { 0x0c, memoryMbcUnknown, "MMM01+RAM" },
-  { 0x0d, memoryMbcUnknown, "MMM01+RAM+BAT" },
-  { 0x0f, memoryMbc3,       "MBC3+BAT+RTC" },
-  { 0x10, memoryMbc3,       "MBC3+RAM+BAT+RTC" },
-  { 0x11, memoryMbc3,       "MBC3" },
-  { 0x12, memoryMbc3,       "MBC3+RAM" },
-  { 0x13, memoryMbc3,       "MBC3+RAM+BAT" },
-  { 0x15, memoryMbcUnknown, "MBC4" },
-  { 0x16, memoryMbcUnknown, "MBC4+RAM" },
-  { 0x17, memoryMbcUnknown, "MBC4+RAM+BAT" },
-  { 0x19, memoryMbc5,       "MBC5" },
-  { 0x1a, memoryMbc5,       "MBC5+RAM" },
-  { 0x1b, memoryMbc5,       "MBC5+RAM+BAT" },
-  { 0x1c, memoryMbc5,       "MBC5+MOT" },
-  { 0x1d, memoryMbc5,       "MBC5+RAM+MOT" },
-  { 0x1e, memoryMbc5,       "MBC5+RAM+BAT+MOT" },
-  { 0xfc, memoryMbcUnknown, "Pocket Camera" },
-  { 0xfd, memoryMbcUnknown, "Bandai TAMA5" },
-  { 0xfe, memoryMbcUnknown, "Hudson HuC-3" },
-  { 0xff, memoryMbcUnknown, "Hudson HuC-1" },
-  {   -1, memoryMbcUnknown, NULL }
+  { 0x00, memoryMbcDefault },
+  { 0x01, memoryMbc1 },
+  { 0x02, memoryMbc1 },
+  { 0x03, memoryMbc1 },
+  { 0x05, memoryMbc2 },
+  { 0x06, memoryMbc2 },
+  { 0x08, memoryMbcDefault },
+  { 0x09, memoryMbcDefault },
+  { 0x0f, memoryMbc3 },
+  { 0x10, memoryMbc3 },
+  { 0x11, memoryMbc3 },
+  { 0x12, memoryMbc3 },
+  { 0x13, memoryMbc3 },
+  { 0x19, memoryMbc5 },
+  { 0x1a, memoryMbc5 },
+  { 0x1b, memoryMbc5 },
+  { 0x1c, memoryMbc5 },
+  { 0x1d, memoryMbc5 },
+  { 0x1e, memoryMbc5 },
+  {   -1, memoryMbcUnknown }
 };
 
 static DmOpenRef GameDbP = NULL;
@@ -190,132 +212,77 @@ static const MbcVectorsType Mbc5Vectors = {
 
 /* === Function prototypes ============================================	*/
 
-static void SetupState(MemoryStateType *stateP);
+static void SetupState(MemoryStateType *stateP)
+  MEMORY_SECTION;
 
 /* === Retrieve MBC information =======================================	*/
 
 /**
- * Retrieves and stores infos of the current game in MemoryMbcInfo.
+ * Retrieves infos of the current game.
+ *
+ * @return true if successful.
  */
-void MemoryRetrieveMbcInfo(void) {
-  LocalID   dbId;
-  DmOpenRef dbP=0;
+Boolean MemoryRetrieveMbcInfo(void) {
   MemHandle recH;
   UInt8     *recP;
-  UInt16    crc1, crc2, numRecs, i;
+  UInt16    crc1, crc2, i;
 
   /* set default value to show error */
-  MemoryMbcInfo.mbc = memoryMbcError;
+  PrefsPreferences.game.mbc = memoryMbcError;
 
-  /* fetch data from database stored in palms main memory */
-  if(PrefsPreferences.game.volIdx == 0) {
-
-    /* open game's database and get the first record */
-    dbId = DmFindDatabase(PrefsPreferences.game.cardNo,
-			  PrefsPreferences.game.name);
-    if (dbId == 0)
-      return;
-
-    dbP = DmOpenDatabase(PrefsPreferences.game.cardNo, dbId, dmModeReadOnly);
-    if (dbP == NULL)
-      return;
-    recH = DmQueryRecord(dbP, 0);
-    if (recH == NULL) {
-      DmCloseDatabase(dbP);
-      return;
-    }
-
-    /* check size of first record */
-    if (MemHandleSize(recH) != 32 * 1024L) {
-      DmCloseDatabase(dbP);
-      return;
-    }
-
-    recP = MemHandleLock(recH);
-
+  /* obtain first record */
+  if (PrefsPreferences.game.volIndex == vfsRamVolIndex) {
+    recH = RamGetFirstBlock(&PrefsPreferences.game);
   } else {
-    /* fetch first record from file stored in vfs */
-    recH = VFSFetchHead(&PrefsPreferences.game);
-    if(recH == NULL)
-      return;
-
-    /* check size of first record */
-    if (MemHandleSize(recH) != 32 * 1024L) {
-      MemHandleFree(recH);
-      return;
-    }
-
-    if(recH == NULL)
-      return;
-    recP = MemHandleLock(recH);
+    recH = VfsGetFirstBlock(&PrefsPreferences.game);
   }
+  if (recH == NULL) {
+    return false;
+  }
+
+  /* check size of first record */
+  if (MemHandleSize(recH) != 32 * 1024L) {
+    MemHandleFree(recH);
+    return false;
+  }
+
+  recP = MemHandleLock(recH);
 
   /* calculate CRCs */
   crc1 = Crc16CalcBlock(recP + 0           , crcBlockSize, crcSeed);
   crc2 = Crc16CalcBlock(recP + crcBlockSize, crcBlockSize, crcSeed);
-  MemoryMbcInfo.crc = ((UInt32)crc1 << 16) | crc2;
+  PrefsPreferences.game.crc = ((UInt32)crc1 << 16) | crc2;
 
   /* calculate ROM size */
-  MemoryMbcInfo.romSize = 32 << (recP[0x148] & 0x0f);
-  if ((recP[0x148] & 0xf0) != 0)
-    MemoryMbcInfo.romSize += 32 << (recP[0x148] >> 4);
-
-  if(PrefsPreferences.game.volIdx == 0) {
-
-    /* check count and sizes of other record */
-    numRecs = DmNumRecords(dbP);
-    if (numRecs > memoryMaxRomPages -1 ||
-        numRecs != (MemoryMbcInfo.romSize / 16) - 1) {
-      MemHandleUnlock(recH);
-      DmCloseDatabase(dbP);
-      return;
-    }
-    for (i = 1; i < numRecs; i++) {
-      MemHandle otherRecH;
-
-      otherRecH = DmQueryRecord(dbP, i);
-      if (otherRecH == NULL) {
-        MemHandleUnlock(recH);
-        DmCloseDatabase(dbP);
-        return;
-      }
-
-      if (MemHandleSize(otherRecH) != 16 * 1024L) {
-        MemHandleUnlock(recH);
-        DmCloseDatabase(dbP);
-        return;
-      }
-    }
-  } else {
-    /* we might check the filesize here, currently i am just */
-    /* too lazy (Till) */
+  PrefsPreferences.game.romSize = 32 << (recP[0x148] & 0x0f);
+  if ((recP[0x148] & 0xf0) != 0) {
+    PrefsPreferences.game.romSize += 32 << (recP[0x148] >> 4);
   }
 
   /* scan the list of known MBC types */
-  for (i = 0; CartridgesKnown[i].code != -1; i++)
-    if (recP[0x147] == CartridgesKnown[i].code)
+  for (i = 0; CartridgesKnown[i].code != -1; i++) {
+    if (recP[0x147] == CartridgesKnown[i].code) {
       break;
-  MemoryMbcInfo.mbc = CartridgesKnown[i].mbc;
-  MemoryMbcInfo.name = CartridgesKnown[i].name;
+    }
+  }
+  PrefsPreferences.game.mbc = CartridgesKnown[i].mbc;
 
-  /* calculate RAM size (in bytes needed for the RAM record!) */
-  if (MemoryMbcInfo.mbc == memoryMbc2)
-    MemoryMbcInfo.ramSize = 512;
-  else if (recP[0x149] == 0)
-    MemoryMbcInfo.ramSize = 0;
-  else if (recP[0x149] <= 3)
-    MemoryMbcInfo.ramSize = 512 << (recP[0x149] << 1);
-  else
-    MemoryMbcInfo.mbc = memoryMbcError;
+  /* calculate RAM size (in bytes, needed for the RAM record!) */
+  if (PrefsPreferences.game.mbc == memoryMbc2) {
+    PrefsPreferences.game.ramSize = 512; /* only 4 bits used */
+  } else if (recP[0x149] == 0) {
+    PrefsPreferences.game.ramSize = 0;
+  } else if (recP[0x149] <= 3) {
+    PrefsPreferences.game.ramSize = 512 << (recP[0x149] << 1);
+  } else {
+    PrefsPreferences.game.mbc = memoryMbcError;
+  }
 
   /* release everything */
-  if(PrefsPreferences.game.volIdx == 0) {
-    MemHandleUnlock(recH);
-    DmCloseDatabase(dbP);
-  } else {
-    MemHandleUnlock(recH);
-    MemHandleFree(recH);
-  }
+  MemHandleUnlock(recH);
+  MemHandleFree(recH);
+
+  return PrefsPreferences.game.mbc > memoryMbcUnknown;
 }
 
 /* === Setup, cleanup, reset, load and save ===========================	*/
@@ -326,52 +293,61 @@ void MemoryRetrieveMbcInfo(void) {
  * @return true if successful.
  */
 Boolean MemorySetup(void) {
-  LocalID dbId;
   UInt16  numRecs, i, romPages;
-  UInt16  card;
 
-  /* load game from palm memory or from card */
-  if(PrefsPreferences.game.volIdx != 0) {
-    if(!VFSGameLoad(&PrefsPreferences.game, &card, &dbId))
-      return false;
-
-    GameDbP = DmOpenDatabase(card, dbId, dmModeReadOnly);
+  if (PrefsPreferences.game.volIndex == vfsRamVolIndex) {
+    GameDbP = RamGameDbOpen(&PrefsPreferences.game);
   } else {
-    dbId = DmFindDatabase(PrefsPreferences.game.cardNo,
-			  PrefsPreferences.game.name);
-    if (dbId == 0)
-      return false;
-
-    GameDbP = DmOpenDatabase(PrefsPreferences.game.cardNo, dbId,
-			     dmModeReadOnly);
+    GameDbP = VfsGameDbOpen(&PrefsPreferences.game);
   }
 
   if (GameDbP == NULL) {
-    if(PrefsPreferences.game.volIdx != 0)
-      VFSGameUnload();
-
     return false;
   }
 
-  /* get all records */
-  numRecs = DmNumRecords(GameDbP);
-  for (i = 0; i < numRecs; i++)
-    GameDbRecH[i] = DmQueryRecord(GameDbP, i);
-  for (; i < memoryMaxRomPages - 1; i++)
+  for (i = 0; i < memoryMaxRomPages - 1; i++) {
     GameDbRecH[i] = NULL;
+  }
+
+  numRecs = DmNumRecords(GameDbP);
+
+  /* check number of records and sizes of other record but the first */
+  if (numRecs > memoryMaxRomPages -1 ||
+      numRecs != (PrefsPreferences.game.romSize / 16) - 1) {
+    return false;
+  }
+  for (i = 1; i < numRecs; i++) {
+    MemHandle recH;
+
+    recH = DmQueryRecord(GameDbP, i);
+    if (recH == NULL) {
+      return false;
+    }
+
+    if (MemHandleSize(recH) != 16 * 1024L) {
+      return false;
+    }
+  }
+
+  /* all OK, now get all records */
+  for (i = 0; i < numRecs; i++) {
+    GameDbRecH[i] = DmQueryRecord(GameDbP, i);
+  }
 
   /* setup ROM pages, locking all records */
   romPages = numRecs + 1;
   MemoryRomStart = MemHandleLock(GameDbRecH[0]);
   MemoryRomPages[0] = MemoryRomStart + 0x0000 - 0x4000;
   MemoryRomPages[1] = MemoryRomStart + 0x4000 - 0x4000;
-  for (i = 2; i < romPages; i++)
+  for (i = 2; i < romPages; i++) {
     MemoryRomPages[i] = MemHandleLock(GameDbRecH[i - 1]) - 0x4000;
+  }
   /* most MBCs have a paging "error" */
-  switch (MemoryMbcInfo.mbc) {
+  switch (PrefsPreferences.game.mbc) {
   case memoryMbc1:
-    for (i = 0; i < romPages; i += 32)
+    for (i = 0; i < romPages; i += 32) {
       MemoryRomPages[i] = MemoryRomPages[i + 1];
+    }
     break;
   case memoryMbc5:
     break;
@@ -379,31 +355,32 @@ Boolean MemorySetup(void) {
     MemoryRomPages[0] = MemoryRomPages[1];
     break;
   }
-  for (i = romPages; i < memoryMaxRomPages; i++)
+  for (i = romPages; i < memoryMaxRomPages; i++) {
     MemoryRomPages[i] = MemoryRomPages[i - romPages];
+  }
 
   MemSemaphoreReserve(true);
 
   /* setup RAM access vectors */
-  if (MemoryMbcInfo.ramSize == 0) {
+  if (PrefsPreferences.game.ramSize == 0) {
     EmulationEmulator[gbemuJmpRamRdExt].xt.vector.address =
       MemoryRamRdExtNone;
     EmulationEmulator[gbemuJmpRamWrExt].xt.vector.address =
       MemoryRamWrExtNone;
     ramPageOffset = 0x0000;
-  } else if (MemoryMbcInfo.ramSize <= 512) {
+  } else if (PrefsPreferences.game.ramSize <= 512) {
     EmulationEmulator[gbemuJmpRamRdExt].xt.vector.address =
       MemoryRamRdExtMbc2;
     EmulationEmulator[gbemuJmpRamWrExt].xt.vector.address =
       MemoryRamWrExtMbc2;
     ramPageOffset = 0x0000;
-  } else if (MemoryMbcInfo.ramSize <= 2 * 1024) {
+  } else if (PrefsPreferences.game.ramSize <= 2 * 1024) {
     EmulationEmulator[gbemuJmpRamRdExt].xt.vector.address =
       MemoryRamRdExt2K;
     EmulationEmulator[gbemuJmpRamWrExt].xt.vector.address =
       MemoryRamWrExt2K;
     ramPageOffset = 0x0000;
-  } else if (MemoryMbcInfo.ramSize <= 8 * 1024) {
+  } else if (PrefsPreferences.game.ramSize <= 8 * 1024) {
     EmulationEmulator[gbemuJmpRamRdExt].xt.vector.address =
       MemoryRamRdExt8K;
     EmulationEmulator[gbemuJmpRamWrExt].xt.vector.address =
@@ -434,52 +411,53 @@ void MemoryCleanup(void) {
   UInt16 i;
 
   /* if game is not open, do nothing */
-  if (GameDbP == NULL)
+  if (GameDbP == NULL) {
     return;
+  }
 
   /* unlock all records */
-  for (i = 0; i < memoryMaxRomPages - 1; i++)
-    if (GameDbRecH[i] != NULL)
+  for (i = 0; i < memoryMaxRomPages - 1; i++) {
+    if (GameDbRecH[i] != NULL) {
       MemHandleUnlock(GameDbRecH[i]);
+    }
+  }
 
-  DmCloseDatabase(GameDbP);
-
-  if(PrefsPreferences.game.volIdx != 0)
-    VFSGameUnload();
+  if (PrefsPreferences.game.volIndex == vfsRamVolIndex) {
+    RamGameDbClose(GameDbP);
+  } else {
+    VfsGameDbClose(GameDbP);
+  }
 
   GameDbP = NULL;
 }
 
 /**
- * Sets up all memory stuff to the "reset" state.
+ * Resets all saved memory stuff.
  *
- * @param stateP pointer to the memory state structure.
+ * @param recP   pointer to the record.
+ * @param offset offset into the record.
  */
-void MemoryResetState(MemoryStateType *stateP) {
-  UInt32       t;
-  DateType     d;
-  DateTimeType dt;
-
-  RomPage = 0;
-  RamPage = 0;
-
-  MemoryMbc1RomLsb = 0;
-  MemoryMbc1RomMsb = 0;
-  MemoryMbc1Mode = 0;
+void MemoryResetState(void *recP, UInt32 offset) {
+  UInt32             seconds;
+  DateType           date;
+  DateTimeType       dateTime;
+  UInt32             days;
+  MemoryMbcStateType mbcState = { 0 };
 
   /* get time from OS */
-  MemoryMbc3Mode = 0;
-  t = TimGetSeconds();
-  DateSecondsToDate(t, &d);
-  TimSecondsToDateTime(t, &dt);
-  MemoryMbc3RtcCurrent.control = (DateToDays(d) & 0x100) != 0 ?
-    0x01 : 0x00;
-  MemoryMbc3RtcCurrent.days = (UInt8)DateToDays(d);
-  MemoryMbc3RtcCurrent.hours = (UInt8)dt.hour;
-  MemoryMbc3RtcCurrent.minutes = (UInt8)dt.minute;
-  MemoryMbc3RtcCurrent.seconds = (UInt8)dt.second;
+  seconds = TimGetSeconds();
+  DateSecondsToDate(seconds, &date);
+  days = DateToDays(date);
+  TimSecondsToDateTime(seconds, &dateTime);
 
-  SetupState(stateP);
+  mbcState.mbc3RtcCurrent.control = (days & 0x100) != 0 ? 0x01 : 0x00;
+  mbcState.mbc3RtcCurrent.days = (UInt8)days;
+  mbcState.mbc3RtcCurrent.hours = (UInt8)dateTime.hour;
+  mbcState.mbc3RtcCurrent.minutes = (UInt8)dateTime.minute;
+  mbcState.mbc3RtcCurrent.seconds = (UInt8)dateTime.second;
+
+  DmWrite(recP, offset + OffsetOf(MemoryStateType, mbcState),
+	  &mbcState, sizeof(MemoryMbcStateType));
 }
 
 /**
@@ -513,17 +491,23 @@ void MemorySaveState(void *recP, UInt32 offset) {
   MemoryMbcStateType mbcState;
 
   /* look for current ROM page */
-  for (mbcState.romPage = 0; mbcState.romPage < memoryMaxRomPages;
-       mbcState.romPage++)
-    if (MemoryRomPages[mbcState.romPage] == MemoryBaseRom1)
+  for (mbcState.romPage = 0;
+       mbcState.romPage < memoryMaxRomPages;
+       mbcState.romPage++) {
+    if (MemoryRomPages[mbcState.romPage] == MemoryBaseRom1) {
       break;
+    }
+  }
   mbcState.romPage %= memoryMaxRomPages;
 
   /* look for current RAM page */
-  for (mbcState.ramPage = 0; mbcState.ramPage < memoryMaxRamPages;
-       mbcState.ramPage++)
-    if (MemoryRamPages[mbcState.ramPage] == MemoryBaseRamExt)
+  for (mbcState.ramPage = 0;
+       mbcState.ramPage < memoryMaxRamPages;
+       mbcState.ramPage++) {
+    if (MemoryRamPages[mbcState.ramPage] == MemoryBaseRamExt) {
       break;
+    }
+  }
   mbcState.ramPage %= memoryMaxRamPages;
 
   mbcState.mbc1RomLsb = MemoryMbc1RomLsb;
@@ -552,9 +536,10 @@ static void SetupState(MemoryStateType *stateP) {
   MemoryBaseRamVid = stateP->ram.vid8000 + (0x10000 - 0x8000);
   MemoryBaseRamInt = stateP->ram.intC000 + (0x10000 - 0xc000);
   MemoryBaseRamOam = stateP->ram.oamFe00 + (0x10000 - 0xfe00);
-  for (i = 0; i < memoryMaxRamPages; i++)
+  for (i = 0; i < memoryMaxRamPages; i++) {
     MemoryRamPages[i] = StatesCartridgeRamPtr + i * ramPageOffset +
       (0x10000 - 0xa000);
+  }
 
   /* restore pointer to current ROM and RAM page */
   MemoryBaseRom1   = MemoryRomPages[RomPage];
@@ -563,12 +548,13 @@ static void SetupState(MemoryStateType *stateP) {
   MemSemaphoreReserve(true);
 
   /* setup MBC vectors */
-  switch (MemoryMbcInfo.mbc) {
+  switch (PrefsPreferences.game.mbc) {
   case memoryMbc1:
-    if ((MemoryMbc1Mode & 0x01) == 0)
+    if ((MemoryMbc1Mode & 0x01) == 0) {
       mbcVectorsP = &Mbc1VectorsMode168;
-    else
+    } else {
       mbcVectorsP = &Mbc1VectorsMode432;
+    }
     break;
   case memoryMbc2:
     mbcVectorsP = &Mbc2Vectors;

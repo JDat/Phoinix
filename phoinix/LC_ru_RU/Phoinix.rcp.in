@@ -1,0 +1,668 @@
+///////////////////////////////////////////////////////////////////////////
+//  LC_ru_RU/Phoinix.rcp.in
+//      Resources for the user interface
+//      (Russian/Russia version)
+//      Basis by Bodo Wenzel <palm.gb_emu@gmx.de>,
+//      translated by Osokin aka DrDooM <osokin@altholding.ru>
+//
+//  NOTE: Please use font coding "iso-8859-5" for this file.
+///////////////////////////////////////////////////////////////////////////
+//
+// Phoinix,
+// Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
+//
+// (c)2000-2007 Bodo Wenzel
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+///////////////////////////////////////////////////////////////////////////
+//  History:
+//
+//  $Log: Phoinix.rcp.in,v $
+//  Revision 1.2  2007/03/17 14:29:46  bodowenzel
+//  New info control for wall clock
+//  Multiple saved state feature implemented
+//  High resolution graphics
+//
+//  Revision 1.1  2006/04/29 08:27:36  bodowenzel
+//  Russian/Russia translation added, not ready
+//
+///////////////////////////////////////////////////////////////////////////
+//  Notes to translators:
+//
+//  Please don't translate "A", "B", "Select", and "Start" when used as
+//  the names of GB buttons - these are all over the world the same.
+//
+//  Coding of special characters:
+//
+//          New line         = \n
+//
+//  "TM"    Trademark        = \x99
+//  "(C)"   Copyright        = \xa9
+//  "(R)"   Registered TM    = \xae
+//
+//  "x"     Multiply sign    = \xd7
+//  "o"     Bullet point     = \x95
+//  "..."   Ellipsis         = \x85
+//
+//          Arrow left       = \x03
+//          Arrow right      = \x04
+//          Arrow up         = \x05
+//          Arrow down       = \x06
+//
+//  Some menu entries are padded with spaces (" ") to make PilRC assign
+//  enough width for the converted text.
+///////////////////////////////////////////////////////////////////////////
+
+#include "Phoinix.h"
+
+//=== Application launcher ================================================
+
+VERSION "##VERSION##"
+
+// The name and creator ID are set by the build-prc tool.
+
+ICON ID 1000
+BEGIN
+  BITMAP "icon1.bmp"   BPP 1 DENSITY 72
+  BITMAP "icon2.bmp"   BPP 2 DENSITY 72
+  BITMAP "icon8.bmp"   BPP 8 DENSITY 72  TRANSPARENT 0 255 0
+  BITMAP "icon8hr.bmp" BPP 8 DENSITY 144 TRANSPARENT 0 255 0
+END
+
+ICON ID 1001
+BEGIN
+  BITMAP "smic1.bmp"   BPP 1 DENSITY 72
+  BITMAP "smic2.bmp"   BPP 2 DENSITY 72
+  BITMAP "smic8.bmp"   BPP 8 DENSITY 72  TRANSPARENT 0 255 0
+  BITMAP "smic8hr.bmp" BPP 8 DENSITY 144 TRANSPARENT 0 255 0
+END
+
+// This resource tells the H330's OS that it's high-rez.
+HEX "sKst" ID 1000 0x00 0x00 0x00 0x00
+
+//=== Game Manager ========================================================
+
+FORM ID formIdManager AT (0 0 160 160)
+  MENUID menuIdManager
+BEGIN
+  TITLE "Phoinix"
+
+  TABLE ID tableIdManagerList AT (0 16 160-1-7 tableManagerHeight*11)
+    ROWS tableManagerHeight COLUMNS 1 COLUMNWIDTHS 160-1-7
+  SCROLLBAR ID scrollbarIdManagerList
+    AT (PREVRIGHT+1 PREVTOP 7 PREVHEIGHT)
+
+  LABEL "Нет установленных игр." ID labelIdManagerNoGames
+    AT (CENTER@65 45) NONUSABLE FONT 1
+
+
+  LABEL "States:" AUTOID AT (CENTER@40-1 85) FONT 1
+  LIST "" ID listIdManagerStates
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+1 5*5+11 AUTO)
+    VISIBLEITEMS 4
+  BUTTON "Delete" ID buttonIdManagerDelete
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+5 AUTO AUTO)
+
+  BUTTON "" ID buttonIdManagerGo
+    AT (RIGHT@160-1 BOTTOM@160-1 80+2 72+2)
+  LABEL "Старт!" ID labelIdManagerGo
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+MENU ID menuIdManager
+BEGIN
+  PULLDOWN "Игра"
+  BEGIN
+    MENUITEM "Подробно\x85" ID menuIdManagerGameDetails
+    MENUITEM SEPARATOR
+    MENUITEM "Удалить\x85"  ID menuIdManagerGameDelete  "D"
+  END
+
+  PULLDOWN "Опции"
+  BEGIN
+    MENUITEM "Эмуляция\x85"          ID menuIdManagerOptionsEmulation
+    MENUITEM "Управление\x85"        ID menuIdManagerOptionsButtonMapping
+    MENUITEM "Вирт.кнопки\x85      " ID menuIdManagerOptionsScreenLayout
+    MENUITEM SEPARATOR
+    MENUITEM "Советы\x85"            ID menuIdManagerOptionsTips
+    MENUITEM "О программе\x85"       ID menuIdManagerOptionsAbout
+  END
+END
+
+STRING ID helpIdManager
+  "Для запуска игры нажмите большую кнопку. Если на ней написано \"Старт!\", игра "\
+  "запустится с начала. Если на ней изображен кадр из игры, запустится сохраненная "\
+  "игра.\n"\
+  "\n"\
+  "The list on the left shows the saved states of the game. To start "\
+  "with such a state you select it before you tap \"GO!\". The first "\
+  "entry is always the current state; it will be overwritten each time.\n"\
+  "\n"\
+  "To delete a saved state select it and tap \"Delete\"."
+
+ALERT ID alertIdManagerNoGames
+  INFORMATION
+  HELPID helpIdManagerNoGames
+BEGIN
+  TITLE "Нет игр."
+  MESSAGE "Нет игр для того, что-бы это сделать."
+  BUTTONS "OK"
+END
+
+STRING ID helpIdManagerNoGames
+  "Phoinix эмулирует приставку Gameboy, для игры необходим файл "\
+  "с данными. Эти файлы легко найти в сети, обычно они имеют расширение "\
+  "\"*.GB\".\n"\
+  "\n"\
+  "После получения необходимого файла его нужно перевести в формат базы "\
+  "данных (\"*.PDB\"). На сайте эмулятора можно скачать программу \"gb2pdb\" "\
+  "для конвертации. Затем полученный файл необходимо установить в память "\
+  "КПК или на карту памяти.\n"\
+  "\n"\
+  "Пожалуйста, читайте документацию!"
+
+ALERT ID alertIdManagerDeleteGame
+  WARNING
+  DEFAULTBUTTON 1
+BEGIN
+  TITLE "Удалить игру"
+  MESSAGE "Вы хотите удалить \"^1\"?"
+  BUTTONS "OK" "Отмена"
+END
+
+//=== Emulation ===========================================================
+
+FORM ID formIdEmulation AT (0 0 160 160)
+  MENUID menuIdEmulation
+BEGIN
+  /* NOTE:
+   * The controls are made usable and placed at runtime.
+   */
+  CHECKBOX "Пауза" ID checkboxIdEmulationPause
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  CHECKBOX "Ускор." ID checkboxIdEmulationBoost
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  BUTTON "Select" ID buttonIdEmulationSelect
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "Start"  ID buttonIdEmulationStart
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "B"      ID buttonIdEmulationB
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "A"      ID buttonIdEmulationA
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "" ID buttonIdEmulationTime
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationBattery
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationPace
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationClock
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+END
+
+MENU ID menuIdEmulation
+BEGIN
+  PULLDOWN "Игра"
+  BEGIN
+    MENUITEM "Нажать все"   ID menuIdEmulationGamePressAllKeys "A"
+    MENUITEM SEPARATOR
+    MENUITEM "Ускорение"    ID menuIdEmulationGameBoost        "B"
+    MENUITEM "Пауза"        ID menuIdEmulationGamePause        "P"
+    MENUITEM "Перезагрузка" ID menuIdEmulationGameReset
+    MENUITEM SEPARATOR
+    MENUITEM "Выход"        ID menuIdEmulationGameQuit
+  END
+
+  PULLDOWN "State"
+  BEGIN
+    MENUITEM "Save"     ID menuIdEmulationStateSave "S"
+    MENUITEM "Load\x85" ID menuIdEmulationStateLoad "L"
+  END
+
+  PULLDOWN "Опции"
+  BEGIN
+    MENUITEM "Эмуляция\x85"          ID menuIdEmulationOptionsEmulation
+    MENUITEM "Управление\x85"        ID menuIdEmulationOptionsButtonMapping
+    MENUITEM "Вирт.кнопки\x85      " ID menuIdEmulationOptionsScreenLayout
+    MENUITEM SEPARATOR
+    MENUITEM "Советы\x85"            ID menuIdEmulationOptionsTips
+    MENUITEM "О программе\x85"       ID menuIdEmulationOptionsAbout
+  END
+END
+
+STRING ID helpIdEmulation
+  "\"Нажать все\" эмулирует одновременное нажатие \"Select\", "\
+  "\"Start\", \"A\", и \"B\". Эта комбинация используется в некоторых играх.\n"\
+  "\n"\
+  "Для перезагрузки игры используйте \"Перезагрузка\".\n"\
+  "\n"\
+  "To save a state of the game automatically to continue after quitting, "\
+  "enable the option in the Emulation options.\n"\
+  "\n"\
+  "Вы можете использовать стилус для управления в игре. Для этого нажмите в "\
+  "рабочую область экрана и ведите стилус в разные стороны."
+
+FORM ID formIdLoadState AT (2 BOTTOM@160-2 160-2-2 96)
+  MODAL
+  HELPID helpIdLoadState
+BEGIN
+  TITLE "Load State"
+
+  LIST "" ID listIdLoadState AT (CENTER@40-2-2-1 21 5*5+11 AUTO)
+    VISIBLEITEMS 6
+
+  BUTTON "" ID buttonIdLoadState
+    AT (RIGHT@160-2-2-1-4 BOTTOM@96-1-4 80+2 72+2)
+  LABEL "Отмена" ID labelIdLoadState
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+STRING ID helpIdLoadState
+  "Select the desired state from the list; the big button shows the "\
+  "accompanied snapshot. To continue the game without loading another "\
+  "state select the first entry of the list."
+
+//=== Game Details ========================================================
+
+FORM ID formIdGameDetails AT (2 BOTTOM@160-2 160-2-2 100)
+  MODAL
+  MENUID sysEditMenuID
+  HELPID helpIdGameDetails
+  DEFAULTBTNID buttonIdGameDetailsCancel
+BEGIN
+  TITLE "Подробно"
+
+  LABEL "Имя:" AUTOID AT (28 16) FONT 1
+  FIELD ID fieldIdGameDetailsName
+    AT (51+5 16 160-2-2-PREVRIGHT-5-5 AUTO)
+    UNDERLINED MAXCHARS dmDBNameLength-1 AUTOSHIFT
+
+  LABEL "Где:" AUTOID AT (31 28) FONT 1
+  POPUPTRIGGER "" ID popupIdGameDetailsLocation
+    AT (51+2 PREVTOP AUTO AUTO) LEFTANCHOR
+  LIST "" ID listIdGameDetailsLocation
+    AT (PREVLEFT PREVTOP 160-PREVLEFT-3 AUTO) NONUSABLE
+  POPUPLIST ID popupIdGameDetailsLocation listIdGameDetailsLocation
+
+  LABEL "Код:" AUTOID AT (30 43) FONT 1
+  LABEL "12345678" ID labelIdGameDetailsCode AT (51+5 PREVTOP)
+
+  LABEL "Тип:" AUTOID AT (30 55) FONT 1
+  LABEL "12345678901234567890" ID labelIdGameDetailsType
+    AT (51+5 PREVTOP)
+
+  LABEL "Размер:"  AUTOID AT (10 67) FONT 1
+  LABEL "1234567890" ID labelIdGameDetailsSize AT (51+5 PREVTOP)
+
+  BUTTON "OK"     ID buttonIdGameDetailsOk
+    AT (2+3           BOTTOM@100-1-4 41        AUTO)
+  BUTTON "Отмена" ID buttonIdGameDetailsCancel
+    AT (PREVRIGHT+2+4 PREVTOP        PREVWIDTH AUTO)
+
+  GRAFFITISTATEINDICATOR AT (160-2-12-2 100-13)
+END
+
+STRING ID helpIdGameDetails
+  "После изменения имени или расположения нажмите "\
+  "\"OK\".\n"\
+  "\n"\
+  "Код игры - это ее уникальный номер. Определяется 32-битной "\
+  "контрольной суммой.\n"\
+  "\n"\
+  "Тип игры - это код контроллера памяти в картридже "\
+  "с игрой.\n"\
+  "\n"\
+  "Размер игры определяет, сколько байт игра занимает в памяти."
+
+// ---- To text editors:
+// The maximum length of each string is gameDetailsStringMaxLength - 1
+// (19 characters).
+// ---- To translators:
+// Only the marked strings need to be translated!
+// ---- To programmers:
+// Check the strings carefully against the named constants in the
+// source file 'memory.h'!
+STRINGTABLE ID stblIdGameDetailsType ""
+  "Ошибка" /* <= translate this */
+  "Неизв." /* <= translate this */
+  "ROM"
+  "MBC1"
+  "MBC2"
+  "MBC3"
+  "MBC5"
+
+//=== Emulation Options ===================================================
+
+FORM ID formIdEmulationOptions AT (2 BOTTOM@160-2 160-2-2 95)
+  MODAL
+  HELPID helpIdEmulationOptions
+  DEFAULTBTNID buttonIdEmulationOptionsCancel
+BEGIN
+  TITLE "Эмуляция"
+
+  CHECKBOX "Автосохр." ID checkboxIdEmulationOptionsSaveState
+    AT (3 14 81 AUTO) FONT 1
+
+  LABEL "Пропуск кадра:" AUTOID AT (5 34) FONT 1
+
+  LABEL "Обычно:" AUTOID AT (82 46) FONT 1
+  LABEL "00" ID labelIdEmulationOptionsMaxFs AT (125+3 PREVTOP)
+  REPEATBUTTON "\x01" ID buttonIdEmulationOptionsMaxFsUp
+    AT (PREVRIGHT+1 PREVTOP-3 13 8) NOFRAME FONT 5
+  REPEATBUTTON "\x02" ID buttonIdEmulationOptionsMaxFsDown
+    AT (PREVLEFT    PREVTOP+8 13 8) NOFRAME FONT 5
+
+  LABEL "Ускор.:" AUTOID AT (90 62) FONT 1
+  LABEL "00" ID labelIdEmulationOptionsBoost AT (125+3 PREVTOP)
+  REPEATBUTTON "\x01" ID buttonIdEmulationOptionsBoostUp
+    AT (PREVRIGHT+1 PREVTOP-3 13 8) NOFRAME FONT 5
+  REPEATBUTTON "\x02" ID buttonIdEmulationOptionsBoostDown
+    AT (PREVLEFT    PREVTOP+8 13 8) NOFRAME FONT 5
+
+  BUTTON "OK"     ID buttonIdEmulationOptionsOk
+    AT (2+3           BOTTOM@95-1-4 41        AUTO)
+  BUTTON "Отмена" ID buttonIdEmulationOptionsCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdEmulationOptions
+  "\"Auto save state\" enables the automatic save of the state when you "\
+  "quit the game. But it does not create an additional entry in the list "\
+  "of saved states.\n"\
+  "\n"\
+  "Пропуск кадров ускоряет эмуляцию, но частота кадров "\
+  "падает. Phoinix поддерживает два режима: работу со скоростью "\
+  "настоящего GB, или ускорение с фиксированным пропуском кадров. "\
+  "Добиться настоящей скорости GB без пропуска кадров можно только "\
+  "на быстром КПК."
+
+//=== Button Mapping ======================================================
+
+FORM ID formIdButtonMapping AT (2 BOTTOM@160-2 160-2-2 100)
+  MODAL
+  HELPID helpIdButtonMapping
+  DEFAULTBTNID buttonIdButtonMappingCancel
+BEGIN
+  TITLE "Управление"
+
+  CHECKBOX "Hold:" ID checkboxIdButtonMappingHoldVertical
+    AT (10 18 AUTO AUTO) FONT 1
+  LABEL "\x05" /* up */    AUTOID AT (RIGHT@80  PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingUp
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "\x06" /* down */  AUTOID AT (RIGHT@120 PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingDown
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  CHECKBOX "Hold:" ID checkboxIdButtonMappingHoldHorizontal
+    AT (10 PREVBOTTOM+3 AUTO AUTO) FONT 1
+  LABEL "\x03" /* left */  AUTOID AT (RIGHT@80  PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingLeft
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "\x04" /* right */ AUTOID AT (RIGHT@120 PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingRight
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  LABEL "Select:"          AUTOID AT (RIGHT@80  PREVBOTTOM+5) FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingSelect
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "A:"               AUTOID AT (RIGHT@120 PREVTOP)      FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingA
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "Start:"           AUTOID AT (RIGHT@80  PREVBOTTOM+3) FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingStart
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "B:"               AUTOID AT (RIGHT@120 PREVTOP)      FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingB
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  BUTTON "OK"     ID buttonIdButtonMappingOk
+    AT (2+3           BOTTOM@100-1-4 41        AUTO)
+  BUTTON "Отмена" ID buttonIdButtonMappingCancel
+    AT (PREVRIGHT+2+4 PREVTOP        PREVWIDTH AUTO)
+END
+
+STRING ID helpIdButtonMapping
+  "Каждой кнопке GB присваивается клавиша КПК. "\
+  "Нажмите в ячейке выбора для присвоения новой клавиши.\n"\
+  "\n"\
+  "Для использования Jog Dial для управления поставьте галочку \"Hold\".\n"\
+  "\n"\
+  "GamePad от WorldWide Widget Works поддерживается, кнопки "\
+  "не перезначаются."
+
+FORM ID formIdButtonMappingSample AT (2 BOTTOM@160-2 160-2-2 50)
+  MODAL
+  HELPID helpIdButtonMappingSample
+BEGIN
+  TITLE "Ввод кнопки"
+
+  LABEL "Нажмите нужную кнопку." AUTOID AT (5 16) FONT 1
+
+  BUTTON "Без кнопки" ID buttonIdButtonMappingSampleOk
+    AT (2+3           BOTTOM@50-1-4 55        AUTO)
+  BUTTON "Отмена" ID buttonIdButtonMappingSampleCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdButtonMappingSample
+  "Это окно закроется автоматически, если будет нажата кнопка."
+
+//=== Screen Layout =======================================================
+
+FORM ID formIdScreenLayout AT (2 BOTTOM@160-2 160-2-2 60)
+  MODAL
+  HELPID helpIdScreenLayout
+  DEFAULTBTNID buttonIdScreenLayoutCancel
+BEGIN
+  TITLE "Вирт.кнопки"
+
+  LABEL "Панель внизу экрана:" AUTOID AT (5 15) FONT 1
+
+  POPUPTRIGGER "" ID popupIdScreenLayout+0
+    AT (  0 27      AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+1
+    AT ( 39 PREVTOP AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+2
+    AT ( 78 PREVTOP AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+3
+    AT (117 PREVTOP AUTO AUTO) LEFTANCHOR
+  /* NOTES:
+   * The texts have to match the offsetButtonMapping* in Phoinix.h!
+   * There are only 24 pixel, use abbreviations if necessary!
+   * The list is placed at runtime.
+   */
+  LIST "Нет" "Пауза" "Ускор." "Select" "Start" "B" "A"
+       "Время" "Бат." "Скрсть." "Clock"
+    ID listIdScreenLayout AT (0 PREVTOP AUTO AUTO)
+    NONUSABLE VISIBLEITEMS offsetEmulationMax
+  POPUPLIST ID popupIdScreenLayout+0 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+1 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+2 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+3 listIdScreenLayout
+
+  BUTTON "OK"     ID buttonIdScreenLayoutOk
+    AT (2+3           BOTTOM@60-1-4 41        AUTO)
+  BUTTON "Отмена" ID buttonIdScreenLayoutCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdScreenLayout
+  "Выберите из доступных:\n"\
+  "\n"\
+  "\x95 Нет: Не использ.\n"\
+  "\x95 Пауза: Галочка для паузы игры.\n"\
+  "\x95 Ускор.: Галочка для ускоренного режима.\n"\
+  "\x95 Select/Start/B/A: Кнопки Gameboy.\n"\
+  "\x95 Время: Таймер игры.\n"\
+  "\x95 Бат.: Заряд аккумулятора.\n"\
+  "\x95 Скрсть.: Скорость эмуляции.\n"\
+  "\x95 Clock: display the time of day."
+
+//=== About ===============================================================
+
+FORM ID formIdAbout AT (2 BOTTOM@160-2 160-2-2 160-2-2)
+  MODAL
+  HELPID helpIdAbout
+BEGIN
+  TITLE "О программе"
+
+  FORMBITMAP AT (6 18) BITMAP bmpIdAbout
+  LABEL "Эмулятор Gameboy\x99" AUTOID AT (15 80) FONT 1
+
+  LABEL "\xa9 ##COPYRIGHT##"             AUTOID AT (PREVLEFT 95)
+  LABEL "http://phoinix.sourceforge.net" AUTOID AT (PREVLEFT PREVBOTTOM-1)
+  LABEL "mailto:palm.gb_emu@gmx.de"      AUTOID AT (PREVLEFT PREVBOTTOM-1)
+
+  BUTTON "OK" ID buttonIdAboutOk AT (2+4 BOTTOM@160-2-2-1-4 35 AUTO)
+  LABEL "v.##VERSION##" AUTOID AT (RIGHT@160-2-8 PREVTOP)
+END
+
+BITMAP ID bmpIdAbout
+  COMPRESS
+BEGIN
+  BITMAP "Phoinix.bmp"   BPP 2 DENSITY 72
+  BITMAP "Phoinixhr.bmp" BPP 2 DENSITY 144
+END
+
+STRING ID helpIdAbout
+  "Phoinix v.##VERSION##\n"\
+  "Build ##BUILD##\n"\
+  "\n"\
+  "Phoinix - бесплатное ПО, распространяемое под лицензией GNU. "\
+  "www.gnu.org/copyleft/gpl.html. "\
+  "Не вздумайте платить за него! Если хотите сделать приятное, пришлите "\
+  "несколько пирожков с капустой и бутылку кваса по этому адресу:\n"\
+  "##ADDRESS##"\
+  "\n"\
+  "\"Palm\" is a registered trademark of Palm.\n"\
+  "\"Gameboy\" is a registered trademark of Nintendo.\n"\
+  "\n"\
+  "ОЧЕНЬ ВАЖНО: Для обеспечения быстрой эмуляции использован "\
+  "прямой доступ к памяти! Это может ПОВРЕДИТЬ ВСЮ ИНФОРМАЦИЮ "\
+  "в памяти КПК. В случае ошибки может потребоваться выполнение "\
+  "жесткой перезагрузки.\n"\
+  "\n"\
+  "Если Phoinix вызывает ошибку, создается БД с логом ошибки. Пожалуйста "\
+  "свяжитесь с автором: palm.gb_emu@gmx.de.\n"\
+  "\n"\
+  "Благодарности:\n"\
+  "\x95 Till Harbaum за сообщения об ошибках. Без него я бы не "\
+  "закончил эту работу!\n"\
+  "\x95 Jeff Frohwein за сбор ПО и документации разных разработчиков "\
+  "эмуляторов Gameboy.\n"\
+  "\x95 All translators who translated Phoinix into their favourite "\
+  "language.\n"\
+  "\x95 Всем, кто посылал сообщения об ошибках и пожелания. Надеюсь, вы "\
+  "довольны!\n"\
+  "\x95 Всем парням, которые поддерживают бесплатное ПО. При "\
+  "разработке я использовал GNU tool chain.\n"\
+  "\n"\
+  "Пожалуйста, помните: все разработчики имеют право продавать "\
+  "свои программы. Пиратство - это преступление! В связи с этим, я надеюсь, "\
+  "вы понимаете, почему я не сообщаю, где взять коммерческие игры. "\
+  "Помните, некоторые разработчики делают бесплатный софт, который "\
+  "легко найти в интернете.\n"\
+  "\n"\
+  "Линки на бесплатные программы и игрушки можно найти на сайте "\
+  "Phoinix."
+
+//=== VFS =================================================================
+
+ALERT ID alertIdOverwrite
+  WARNING
+  DEFAULTBUTTON 1
+BEGIN
+  TITLE "Перенос файла"
+  MESSAGE "\"^1\" уже существует на \"^2\". Переписать?"
+  BUTTONS "OK" "Отмена"
+END
+
+//=== Miscellaneous =======================================================
+
+FORM ID formIdBusy AT (CENTER@80 CENTER@80 5+8+5 5+11+5)
+  MODAL
+BEGIN
+  FORMBITMAP AT (5 5) BITMAP bmpIdBusy
+END
+
+BITMAP ID bmpIdBusy
+  COMPRESS
+BEGIN
+  BITMAP "eggtimer.bmp"   BPP 1 DENSITY 72
+  BITMAP "eggtimerhr.bmp" BPP 1 DENSITY 144
+END
+
+ALERT ID alertIdError
+  ERROR
+  HELPID helpIdError
+BEGIN
+  TITLE "Ошибка Phoinix"
+  MESSAGE "Произошла ошибка ^1:\n^2."
+  BUTTONS "OK"
+END
+
+// This string table contains all error messages that can be shown via
+// the above alert.
+// ---- To text editors:
+// The maximum length of each string is miscErrorStringMaxLength
+// (99 characters).
+// ---- To programmers:
+// Check the strings carefully against the named constants in the
+// source file 'misc.h'!
+STRINGTABLE ID stblIdError "" ""
+  /* actions that produce errors: */
+    "при инициализации"
+    "при восстановлении игры"
+    "при построении списка игр"
+    "при обращении к карте памяти"
+    "в операционной системе"
+    "в ядре эмулятора"
+    "при удалении игры"
+    "при переименовании игры"
+    "при переносе игры"
+  /* error that occur: */
+    "недостаточно системной памяти"
+    "экран не поддерживается"
+    "версия системы не поддерживается"
+    "новые игры не могут быть импортированы"
+    "не найдена карта памяти"
+    "игра не сохранена"
+    "the state was not loaded"
+    "не могу сохранить, игра перемещена на \"%s\""
+    "ошибка при выполнении"
+    "игра не может быть запущена"
+    "файл не найден"
+    "директория Phoinix не может быть создана"
+    "название содержит неправильные символы"
+    "память защищена от записи"
+    "карта памяти защищена от записи"
+    "имя уже существует"
+    "произошла ошибка записи"
+    "произошла ошибка чтения"
+    "ошибка чтения, новый файл создан"
+    "память переполнена"
+
+STRING ID helpIdError
+  "Пожалуйста, читайте документацию. Возможно, стоит посетить "\
+  "домашнюю страницу\n"\
+  "phoinix.sourceforge.net\n"\
+  "или связаться по почте\n"\
+  "palm.gb_emu@gmx.de\n"\
+  "(пожалуйста, сообщайте всю полезную информацию)."
+
+//=== The end =============================================================

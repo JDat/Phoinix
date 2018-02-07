@@ -8,7 +8,7 @@
  * Phoinix,
  * Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
  *
- * (c)2000-2002 Bodo Wenzel
+ * (c)2000-2005 Bodo Wenzel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  ************************************************************************
  *  History:
  *
- *  $Log$
+ *  $Log: gbemu_rw.inc,v $
+ *  Revision 1.4  2005/01/30 19:34:07  bodowenzel
+ *  Added labels for all combo parts
+ *
+ *  Revision 1.3  2002/10/19 08:08:11  bodowenzel
+ *  History cleanup, Javadoc-style header
+ *
  *  Revision 1.2  2001/12/30 18:47:11  bodowenzel
  *  CVS keyword Log was faulty
  *
@@ -64,6 +70,7 @@
 
 .macro	rd_003f	num		/* ROM bank 0 */
 .macro	rd_\num
+rd_\num:
 	move.l	MemoryBaseRom0@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+(0x\num << 8)(%a2),%a3
@@ -73,6 +80,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)(%a2),%a3
 
 .macro	rd_407f	num		/* ROM bank 1 */
 .macro	rd_\num
+rd_\num:
 	move.l	MemoryBaseRom1@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+(0x\num << 8)(%a2),%a3
@@ -82,30 +90,35 @@ rd\@:	lea	dontOptLo+(0x\num << 8)(%a2),%a3
 
 .macro	wr_001f	num		/* RAM bank enable (MCB1, MCB2) */
 .macro	wr_\num
+wr_\num:
 	jmp	indexToAddress(gbemuJmpRamEnable)
 	.endm
 	.endm
 
 .macro	wr_202f	num		/* ROM bank select */
 .macro	wr_\num
+wr_\num:
 	jmp	indexToAddress(gbemuJmpRomSelectL)
 	.endm
 	.endm
 
 .macro	wr_303f	num		/* ROM bank select */
 .macro	wr_\num
+wr_\num:
 	jmp	indexToAddress(gbemuJmpRomSelectH)
 	.endm
 	.endm
 
 .macro	wr_405f	num		/* RAM bank select */
 .macro	wr_\num
+wr_\num:
 	jmp	indexToAddress(gbemuJmpRamSelect)
 	.endm
 	.endm
 
 .macro	wr_607f	num		/* ROM/RAM mode select (MCB1) */
 .macro	wr_\num
+wr_\num:
 	jmp	indexToAddress(gbemuJmpModeSelect)
 	.endm
 	.endm
@@ -114,6 +127,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)(%a2),%a3
 
 .macro	rd_809f	num		/* RAM video read */
 .macro	rd_\num
+rd_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
@@ -123,6 +137,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_8087	num		/* RAM tile tab 0x8000..0x87ff write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
@@ -132,6 +147,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_888f	num		/* RAM tile tab 0x8800..0x8fff write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
@@ -141,6 +157,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_9097	num		/* RAM tile tab 0x9000..0x97ff write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
@@ -150,6 +167,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_989b	num		/* RAM screen 0x9800..0x9bff write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
@@ -159,6 +177,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_9c9f	num		/* RAM screen 0x9c00..0x9fff write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamVid@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
@@ -170,6 +189,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	rd_a0bf	num		/* RAM external read */
 .macro	rd_\num
+rd_\num:
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
 	jmp	indexToAddress(gbemuJmpRamRdExt)
@@ -178,6 +198,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_a0bf	num		/* RAM external write */
 .macro	wr_\num
+wr_\num:
 	and.w	#0xff,%d1
 	or.w	#0x\num << 8,%d1
 	jmp	indexToAddress(gbemuJmpRamWrExt)
@@ -186,6 +207,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	rd_c0df	num		/* RAM internal read */
 .macro	rd_\num
+rd_\num:
 	move.l	MemoryBaseRamInt@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
@@ -195,6 +217,7 @@ rd\@:	lea	dontOptLo+(0x\num << 8)-0x10000(%a2),%a3
 
 .macro	wr_c0df	num		/* RAM internal write */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamInt@END.w(%a5),%a2
 	move.b	%d1,wr\@+3-Gbemu(%a4)
 wr\@:	move.b	%d0,dontOptLo+(0x\num << 8)-0x10000(%a2)
@@ -204,6 +227,7 @@ wr\@:	move.b	%d0,dontOptLo+(0x\num << 8)-0x10000(%a2)
 
 .macro	rd_e0fd	num		/* RAM internal read (mirror) */
 .macro	rd_\num
+rd_\num:
 	move.l	MemoryBaseRamInt@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+((0x\num-0x20) << 8)-0x10000(%a2),%a3
@@ -213,6 +237,7 @@ rd\@:	lea	dontOptLo+((0x\num-0x20) << 8)-0x10000(%a2),%a3
 
 .macro	wr_e0fd	num		/* RAM internal write (mirror) */
 .macro	wr_\num
+wr_\num:
 	move.l	MemoryBaseRamInt@END.w(%a5),%a2
 	move.b	%d1,wr\@+3-Gbemu(%a4)
 wr\@:	move.b	%d0,dontOptLo+((0x\num-0x20) << 8)-0x10000(%a2)
@@ -303,6 +328,7 @@ wr\@:	move.b	%d0,dontOptLo+((0x\num-0x20) << 8)-0x10000(%a2)
 	.endr
 
 .macro	rd_fe			/* RAM OAM read */
+rd_fe:
 	move.l	MemoryBaseRamOam@END.w(%a5),%a2
 	move.b	%d1,rd\@+3-Gbemu(%a4)
 rd\@:	lea	dontOptLo+(0xfe << 8)-0x10000(%a2),%a3
@@ -310,6 +336,7 @@ rd\@:	lea	dontOptLo+(0xfe << 8)-0x10000(%a2),%a3
 	.endm
 
 .macro	wr_fe			/* RAM OAM write */
+wr_fe:
 	move.l	MemoryBaseRamOam@END.w(%a5),%a2
 	and.w	#0xff,%d1
 	or.w	#0xfe << 8,%d1
@@ -317,11 +344,13 @@ rd\@:	lea	dontOptLo+(0xfe << 8)-0x10000(%a2),%a3
 	.endm
 
 .macro	rd_ff			/* input */
+rd_ff:
 	move.b	%d1,jump\@+2-Gbemu(%a4)
 jump\@:	jmp	offsetIn+dontOptHi(%a4)
 	.endm
 
 .macro	wr_ff			/* output */
+wr_ff:
 	move.b	%d1,jump\@+2-Gbemu(%a4)
 jump\@:	jmp	offsetOut+dontOptHi(%a4)
 	.endm

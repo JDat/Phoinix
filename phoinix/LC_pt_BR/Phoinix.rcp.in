@@ -1,16 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////
 //  LC_pt_BR/Phoinix.rcp.in
-//                      Resources for the user interface
-//                      (Portuguese/Brazilia version)
-//                      Basis by Bodo Wenzel <palm.gb_emu@gmx.de>,
-//                      translated by "Pender666" <pender666@hotmail.com>
+//      Resources for the user interface
+//      (Portuguese/Brazil version)
+//      Basis by Bodo Wenzel <palm.gb_emu@gmx.de>,
+//      translated by Alfredo Peine <apeine@yahoo.com>
 //
+//  NOTE: Please use font coding "iso-8859-1" for this file.
 ///////////////////////////////////////////////////////////////////////////
 //
 // Phoinix,
 // Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
 //
-// (c)2000-2004 Bodo Wenzel
+// (c)2000-2007 Bodo Wenzel
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,11 +25,22 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ///////////////////////////////////////////////////////////////////////////
 //  History:
 //
-//  $Log$
+//  $Log: Phoinix.rcp.in,v $
+//  Revision 1.5  2007/03/17 14:29:45  bodowenzel
+//  New info control for wall clock
+//  Multiple saved state feature implemented
+//  High resolution graphics
+//
+//  Revision 1.4  2006/04/29 08:26:58  bodowenzel
+//  Updated to v.1.3, not ready
+//
+//  Revision 1.3  2004/01/11 19:02:41  bodowenzel
+//  New COPYRIGHT and ADDRESS placeholder
+//
 //  Revision 1.2  2002/12/07 08:56:25  bodowenzel
 //  Tweaked button mapping form like proposed by HJ
 //  Tweaked aboutform like proposed by HJ
@@ -53,9 +65,13 @@
 //  Portuguese/Brazilia version added, tagged v.1.1
 //
 ///////////////////////////////////////////////////////////////////////////
+//  Notes to translators:
+//
+//  Please don't translate "A", "B", "Select", and "Start" when used as
+//  the names of GB buttons - these are all over the world the same.
+//
 //  Coding of special characters:
 //
-//  " . "   Bullet point     = \x95
 //          New line         = \n
 //
 //  "TM"    Trademark        = \x99
@@ -63,6 +79,13 @@
 //  "(R)"   Registered TM    = \xae
 //
 //  "x"     Multiply sign    = \xd7
+//  "o"     Bullet point     = \x95
+//  "..."   Ellipsis         = \x85
+//
+//          Arrow left       = \x03
+//          Arrow right      = \x04
+//          Arrow up         = \x05
+//          Arrow down       = \x06
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -74,31 +97,445 @@ VERSION "##VERSION##"
 
 // The name and creator ID are set by the build-prc tool.
 
-ICONFAMILY      "icon1.bmp" "icon2.bmp" "icon4.bmp" "icon8.bmp"
-  TRANSPARENT 0 255 0
-SMALLICONFAMILY "smic1.bmp" "smic2.bmp" "smic4.bmp" "smic8.bmp"
-  TRANSPARENT 0 255 0
+ICON ID 1000
+BEGIN
+  BITMAP "icon1.bmp"   BPP 1 DENSITY 72
+  BITMAP "icon2.bmp"   BPP 2 DENSITY 72
+  BITMAP "icon8.bmp"   BPP 8 DENSITY 72  TRANSPARENT 0 255 0
+  BITMAP "icon8hr.bmp" BPP 8 DENSITY 144 TRANSPARENT 0 255 0
+END
+
+ICON ID 1001
+BEGIN
+  BITMAP "smic1.bmp"   BPP 1 DENSITY 72
+  BITMAP "smic2.bmp"   BPP 2 DENSITY 72
+  BITMAP "smic8.bmp"   BPP 8 DENSITY 72  TRANSPARENT 0 255 0
+  BITMAP "smic8hr.bmp" BPP 8 DENSITY 144 TRANSPARENT 0 255 0
+END
 
 // This resource tells the H330's OS that it's high-rez.
 HEX "sKst" ID 1000 0x00 0x00 0x00 0x00
 
-//=== Startup =============================================================
+//=== Game Manager ========================================================
 
-ALERT ID alertIdStartupIncompatibleRom
-  ERROR
+FORM ID formIdManager AT (0 0 160 160)
+  MENUID menuIdManager
 BEGIN
-  TITLE "Sistema Incompatível"
-  MESSAGE "A versão do sistema deste dispositivo não é suportada."
+  TITLE "Phoinix"
+
+  TABLE ID tableIdManagerList AT (0 16 160-1-7 tableManagerHeight*11)
+    ROWS tableManagerHeight COLUMNS 1 COLUMNWIDTHS 160-1-7
+  SCROLLBAR ID scrollbarIdManagerList
+    AT (PREVRIGHT+1 PREVTOP 7 PREVHEIGHT)
+
+  LABEL "Nenhum jogo foi encontrado." ID labelIdManagerNoGames
+    AT (CENTER@80 45) NONUSABLE FONT 1
+
+  LABEL "States:" AUTOID AT (CENTER@40-1 85) FONT 1
+  LIST "" ID listIdManagerStates
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+1 5*5+11 AUTO)
+    VISIBLEITEMS 4
+  BUTTON "Delete" ID buttonIdManagerDelete
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) PREVBOTTOM+5 AUTO AUTO)
+
+  BUTTON "" ID buttonIdManagerGo
+    AT (RIGHT@160-1 BOTTOM@160-1 80+2 72+2)
+  LABEL "JOGAR!" ID labelIdManagerGo
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+MENU ID menuIdManager
+BEGIN
+  PULLDOWN "Jogo"
+  BEGIN
+    MENUITEM "Detalhes\x85" ID menuIdManagerGameDetails
+    MENUITEM SEPARATOR
+    MENUITEM "Apagar\x85"   ID menuIdManagerGameDelete  "D"
+  END
+
+  PULLDOWN "Opções"
+  BEGIN
+    MENUITEM "Emulação\x85"       ID menuIdManagerOptionsEmulation
+    MENUITEM "Mapear botões\x85"  ID menuIdManagerOptionsButtonMapping
+    MENUITEM "Layout da tela\x85" ID menuIdManagerOptionsScreenLayout
+    MENUITEM SEPARATOR
+    MENUITEM "Dicas\x85"          ID menuIdManagerOptionsTips
+    MENUITEM "Sobre Phoinix\x85"  ID menuIdManagerOptionsAbout
+  END
+END
+
+STRING ID helpIdManager
+  "Para começar um jogo, pressione o botão grande. Se mostrar \"JOGAR!\", "\
+  "O jogo começa como se o Gameboy tivesse sido ligado. Se mostrar uma "\
+  "miniatura da tela do jogo, o mesmo será iniciado de uma posição gravada.\n"\
+  "\n"\
+  "The list on the left shows the saved states of the game. To start "\
+  "with such a state you select it before you tap \"GO!\". The first "\
+  "entry is always the current state; it will be overwritten each time.\n"\
+  "\n"\
+  "To delete a saved state select it and tap \"Delete\"."
+
+ALERT ID alertIdManagerNoGames
+  INFORMATION
+  HELPID helpIdManagerNoGames
+BEGIN
+  TITLE "Não há jogos."
+  MESSAGE "Não há jogos para realizar esta operação."
   BUTTONS "OK"
 END
 
-ALERT ID alertIdStartupIncompatibleScreen
-  ERROR
+STRING ID helpIdManagerNoGames
+  "Phoinix emula somente o hardware do Gameboy, e para jogar é necessário "\
+  "dados binários do jogo. Você os encontrará como arquivos, com a extensão "\
+  "\"*.GB\".\n"\
+  "\n"\
+  "Depois de conseguir o arquivo do jogo, o mesmo deve ser convertido para "\
+  "um banco de dados do Palm (\"*.PDB\"). Isto é obtido com o conversor "\
+  "\"gb2pdb\" no seu micro de mesa. Este banco de dados deve ser instalado "\
+  "no seu Palm.\n"\
+  "\n"\
+  "Por favor leia a documentação!"
+
+ALERT ID alertIdManagerDeleteGame
+  WARNING
+  DEFAULTBUTTON 1
 BEGIN
-  TITLE "Sistema Incompatível"
-  MESSAGE "A tela deste dispositivo não é suportada."
-  BUTTONS "OK"
+  TITLE "Apagar jogo"
+  MESSAGE "Você tem certeza que quer apagar \"^1\"?"
+  BUTTONS "OK" "Cancelar"
 END
+
+//=== Emulation ===========================================================
+
+FORM ID formIdEmulation AT (0 0 160 160)
+  MENUID menuIdEmulation
+BEGIN
+  /* NOTE:
+   * The controls are made usable and placed at runtime.
+   */
+  CHECKBOX "Pausa" ID checkboxIdEmulationPause
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  CHECKBOX "Turbo" ID checkboxIdEmulationBoost
+    AT (0 BOTTOM@160-1 AUTO AUTO) NONUSABLE
+  BUTTON "Select" ID buttonIdEmulationSelect
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "Start"  ID buttonIdEmulationStart
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED
+  BUTTON "B"      ID buttonIdEmulationB
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "A"      ID buttonIdEmulationA
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED FONT 1
+  BUTTON "" ID buttonIdEmulationTime
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationBattery
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationPace
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+  BUTTON "" ID buttonIdEmulationClock
+    AT (5 BOTTOM@160-1 30 AUTO) NONUSABLE DISABLED NOFRAME
+END
+
+MENU ID menuIdEmulation
+BEGIN
+  PULLDOWN "Jogo"
+  BEGIN
+    MENUITEM "Todas as teclas" ID menuIdEmulationGamePressAllKeys "A"
+    MENUITEM SEPARATOR
+    MENUITEM "Turbo"           ID menuIdEmulationGameBoost        "T"
+    MENUITEM "Pausa"           ID menuIdEmulationGamePause        "P"
+    MENUITEM "Reiniciar"       ID menuIdEmulationGameReset
+    MENUITEM SEPARATOR
+    MENUITEM "Sair"            ID menuIdEmulationGameQuit
+  END
+
+  PULLDOWN "State"
+  BEGIN
+    MENUITEM "Save"     ID menuIdEmulationStateSave "S"
+    MENUITEM "Load\x85" ID menuIdEmulationStateLoad "L"
+  END
+
+  PULLDOWN "Opções"
+  BEGIN
+    MENUITEM "Emulação\x85"       ID menuIdEmulationOptionsEmulation
+    MENUITEM "Mapear botões\x85"  ID menuIdEmulationOptionsButtonMapping
+    MENUITEM "Layout de tela\x85" ID menuIdEmulationOptionsScreenLayout
+    MENUITEM SEPARATOR
+    MENUITEM "Dicas\x85"          ID menuIdEmulationOptionsTips
+    MENUITEM "Sobre Phoinix\x85"  ID menuIdEmulationOptionsAbout
+  END
+END
+
+STRING ID helpIdEmulation
+  "\"Todas as teclas\" simula pressionar simultaneamente \"Select\", "\
+  "\"Start\", \"A\", and \"B\". Alguns jogos reiniciam com isso.\n"\
+  "\n"\
+  "Para reiniciar um jogo (desligar e ligar um Gameboy real), use "\
+  "\"Reset\".\n"\
+  "\n"\
+  "To save a state of the game automatically to continue after quitting, "\
+  "enable the option in the Emulation options.\n"\
+  "\n"\
+  "Para usar seu stylus como controlador, ponha-o em algum lugar na tela e "\
+  "o arraste sobre a tela."
+
+FORM ID formIdLoadState AT (2 BOTTOM@160-2 160-2-2 96)
+  MODAL
+  HELPID helpIdLoadState
+BEGIN
+  TITLE "Load State"
+
+  LIST "" ID listIdLoadState AT (CENTER@40-2-2-1 21 5*5+11 AUTO)
+    VISIBLEITEMS 6
+
+  BUTTON "" ID buttonIdLoadState
+    AT (RIGHT@160-2-2-1-4 BOTTOM@96-1-4 80+2 72+2)
+  LABEL "Cancel" ID labelIdLoadState
+    AT (CENTER@PREVLEFT+(PREVWIDTH/2) CENTER@PREVTOP+(PREVHEIGHT/2))
+    NONUSABLE FONT 2
+END
+
+STRING ID helpIdLoadState
+  "Select the desired state from the list; the big button shows the "\
+  "accompanied snapshot. To continue the game without loading another "\
+  "state select the first entry of the list."
+
+//=== Game Details ========================================================
+
+FORM ID formIdGameDetails AT (2 BOTTOM@160-2 160-2-2 100)
+  MODAL
+  MENUID sysEditMenuID
+  HELPID helpIdGameDetails
+  DEFAULTBTNID buttonIdGameDetailsCancel
+BEGIN
+  TITLE "Detalhes do jogo"
+
+  LABEL "Nome:" AUTOID AT (RIGHT@51 16) FONT 1
+  FIELD ID fieldIdGameDetailsName
+    AT (PREVRIGHT+5 16 160-2-2-PREVRIGHT-5-5 AUTO)
+    UNDERLINED MAXCHARS dmDBNameLength-1 AUTOSHIFT
+
+  LABEL "Localização:" AUTOID AT (RIGHT@51 28) FONT 1
+  POPUPTRIGGER "" ID popupIdGameDetailsLocation
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO) LEFTANCHOR
+  LIST "" ID listIdGameDetailsLocation
+    AT (PREVLEFT PREVTOP 160-PREVLEFT-3 AUTO) NONUSABLE
+  POPUPLIST ID popupIdGameDetailsLocation listIdGameDetailsLocation
+
+  LABEL "Código:" AUTOID AT (RIGHT@51 43) FONT 1
+  LABEL "12345678" ID labelIdGameDetailsCode AT (PREVRIGHT+5 PREVTOP)
+
+  LABEL "Tipo:" AUTOID AT (RIGHT@51 55) FONT 1
+  LABEL "12345678901234567890" ID labelIdGameDetailsType
+    AT (PREVRIGHT+5 PREVTOP)
+
+  LABEL "Tamanho:"  AUTOID AT (RIGHT@51 67) FONT 1
+  LABEL "1234567890" ID labelIdGameDetailsSize AT (PREVRIGHT+5 PREVTOP)
+
+  BUTTON "OK"       ID buttonIdGameDetailsOk
+    AT (2+3           BOTTOM@100-1-4 42        AUTO)
+  BUTTON "Cancelar" ID buttonIdGameDetailsCancel
+    AT (PREVRIGHT+2+4 PREVTOP        PREVWIDTH AUTO)
+
+  GRAFFITISTATEINDICATOR AT (160-2-12-2 100-13)
+END
+
+STRING ID helpIdGameDetails
+  "Mudanças no nome ou localização não serão feitas até que se pressione "\
+  "\"OK\".\n"\
+  "\n"\
+  "O código do jogo é usado para diferenciar todos os jogos. É calculado como "\
+  "um CRC de 32 bit.\n"\
+  "\n"\
+  "O tipo de jogo é denominado pelo tipo de bloco controlador de memória "\
+  "do cartucho.\n"\
+  "\n"\
+  "O tamanho do jogo é a memória total usada pelo mesmo."
+
+// ---- To text editors:
+// The maximum length of each string is gameDetailsStringMaxLength - 1
+// (19 characters).
+// ---- To translators:
+// Only the marked strings need to be translated!
+// ---- To programmers:
+// Check the strings carefully against the named constants in the
+// source file 'memory.h'!
+STRINGTABLE ID stblIdGameDetailsType ""
+  "Falha"        /* <= translate this */
+  "Desconhecido" /* <= translate this */
+  "ROM"
+  "MBC1"
+  "MBC2"
+  "MBC3"
+  "MBC5"
+
+//=== Emulation Options ===================================================
+
+FORM ID formIdEmulationOptions AT (2 BOTTOM@160-2 160-2-2 95)
+  MODAL
+  HELPID helpIdEmulationOptions
+  DEFAULTBTNID buttonIdEmulationOptionsCancel
+BEGIN
+  TITLE "Opções de emulação"
+
+  CHECKBOX "Posição de auto gravação"
+    ID checkboxIdEmulationOptionsSaveState AT (3 14 AUTO AUTO) FONT 1
+
+  LABEL "Pular frame:" AUTOID AT (5 34) FONT 1
+
+  LABEL "Normal (máx.):" AUTOID AT (RIGHT@125 46) FONT 1
+  LABEL "00" ID labelIdEmulationOptionsMaxFs AT (PREVRIGHT+3 PREVTOP)
+  REPEATBUTTON "\x01" ID buttonIdEmulationOptionsMaxFsUp
+    AT (PREVRIGHT+1 PREVTOP-3 13 8) NOFRAME FONT 5
+  REPEATBUTTON "\x02" ID buttonIdEmulationOptionsMaxFsDown
+    AT (PREVLEFT    PREVTOP+8 13 8) NOFRAME FONT 5
+
+  LABEL "Turbo (fixo):" AUTOID AT (RIGHT@125 62) FONT 1
+  LABEL "00" ID labelIdEmulationOptionsBoost AT (PREVRIGHT+3 PREVTOP)
+  REPEATBUTTON "\x01" ID buttonIdEmulationOptionsBoostUp
+    AT (PREVRIGHT+1 PREVTOP-3 13 8) NOFRAME FONT 5
+  REPEATBUTTON "\x02" ID buttonIdEmulationOptionsBoostDown
+    AT (PREVLEFT    PREVTOP+8 13 8) NOFRAME FONT 5
+
+  BUTTON "OK"       ID buttonIdEmulationOptionsOk
+    AT (2+3           BOTTOM@95-1-4 42        AUTO)
+  BUTTON "Cancelar" ID buttonIdEmulationOptionsCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdEmulationOptions
+  "\"Auto save state\" enables the automatic save of the state when you "\
+  "quit the game. But it does not create an additional entry in the list "\
+  "of saved states.\n"\
+  "\n"\
+  "Pular frames acelera a emulação, mas o número de quadros por segundo "\
+  "cai. Phoinix suporta dois modos, tentando manter a velocidade real "\
+  "do Gameboy, ou turbinar pulando uma quantidade fixa de frames. Contudo, "\
+  "a velocidade real (1.00x) sem pular frames só pode ser obtido em Palms "\
+  "rápidos."
+
+//=== Button Mapping ======================================================
+
+FORM ID formIdButtonMapping AT (2 BOTTOM@160-2 160-2-2 100)
+  MODAL
+  HELPID helpIdButtonMapping
+  DEFAULTBTNID buttonIdButtonMappingCancel
+BEGIN
+  TITLE "Mapear botões"
+
+  CHECKBOX "Segurar:" ID checkboxIdButtonMappingHoldVertical
+    AT (5 18 AUTO AUTO) FONT 1
+  LABEL "\x05" /* up */    AUTOID AT (RIGHT@80  PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingUp
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "\x06" /* down */  AUTOID AT (RIGHT@120 PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingDown
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  CHECKBOX "Segurar:" ID checkboxIdButtonMappingHoldHorizontal
+    AT (5 PREVBOTTOM+3 AUTO AUTO) FONT 1
+  LABEL "\x03" /* left */  AUTOID AT (RIGHT@80  PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingLeft
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "\x04" /* right */ AUTOID AT (RIGHT@120 PREVTOP) FONT 3
+  SELECTORTRIGGER "" ID selIdButtonMappingRight
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  LABEL "Select:"          AUTOID AT (RIGHT@80  PREVBOTTOM+5) FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingSelect
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "A:"               AUTOID AT (RIGHT@120 PREVTOP)      FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingA
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "Start:"           AUTOID AT (RIGHT@80  PREVBOTTOM+3) FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingStart
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+  LABEL "B:"               AUTOID AT (RIGHT@120 PREVTOP)      FONT 1
+  SELECTORTRIGGER "" ID selIdButtonMappingB
+    AT (PREVRIGHT+2 PREVTOP AUTO AUTO)
+
+  BUTTON "OK"       ID buttonIdButtonMappingOk
+    AT (2+3           BOTTOM@100-1-4 42        AUTO)
+  BUTTON "Cancelar" ID buttonIdButtonMappingCancel
+    AT (PREVRIGHT+2+4 PREVTOP        PREVWIDTH AUTO)
+END
+
+STRING ID helpIdButtonMapping
+  "Cada botão do Gameboy pode ser mapeado em um botão do Palm, se um número "\
+  "é mostrado. Pressione o seletor do campo para mudar a tecla.\n"\
+  "\n"\
+  "Para usar os botões direcionais, habilite \"Segurar\".\n"\
+  "\n"\
+  "O GamePad da WorldWide Widget Works pode ser usado se estiver presente. "\
+  "Suas teclas não podem ser mapeadas, já que o layout é fixo."
+
+FORM ID formIdButtonMappingSample AT (2 BOTTOM@160-2 160-2-2 50)
+  MODAL
+  HELPID helpIdButtonMappingSample
+BEGIN
+  TITLE "Tecla de amostra"
+
+  LABEL "Pressione a tecla desejada." AUTOID AT (5 16) FONT 1
+
+  BUTTON "Nenhuma tecla" ID buttonIdButtonMappingSampleOk
+    AT (2+3           BOTTOM@50-1-4 AUTO      AUTO)
+  BUTTON "Cancelar"      ID buttonIdButtonMappingSampleCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdButtonMappingSample
+  "Esta janela se fechará automaticamente se alguma tecla útil for pressionada."
+
+//=== Screen Layout =======================================================
+
+FORM ID formIdScreenLayout AT (2 BOTTOM@160-2 160-2-2 60)
+  MODAL
+  HELPID helpIdScreenLayout
+  DEFAULTBTNID buttonIdScreenLayoutCancel
+BEGIN
+  TITLE "Layout de tela"
+
+  LABEL "Controles na parte inferior:" AUTOID AT (5 15) FONT 1
+
+  POPUPTRIGGER "" ID popupIdScreenLayout+0
+    AT (  0 27      AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+1
+    AT ( 39 PREVTOP AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+2
+    AT ( 78 PREVTOP AUTO AUTO) LEFTANCHOR
+  POPUPTRIGGER "" ID popupIdScreenLayout+3
+    AT (117 PREVTOP AUTO AUTO) LEFTANCHOR
+  /* NOTES:
+   * The texts have to match the offsetButtonMapping* in Phoinix.h!
+   * There are only 24 pixel, use abbreviations if necessary!
+   * The list is placed at runtime.
+   */
+  LIST "Nada" "Pausa" "Turbo" "Select" "Start" "B" "A"
+       "Tempo" "Carga" "Veloc" "Clock"
+    ID listIdScreenLayout AT (0 PREVTOP AUTO AUTO)
+    NONUSABLE VISIBLEITEMS offsetEmulationMax
+  POPUPLIST ID popupIdScreenLayout+0 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+1 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+2 listIdScreenLayout
+  POPUPLIST ID popupIdScreenLayout+3 listIdScreenLayout
+
+  BUTTON "OK"       ID buttonIdScreenLayoutOk
+    AT (2+3           BOTTOM@60-1-4 42        AUTO)
+  BUTTON "Cancelar" ID buttonIdScreenLayoutCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+STRING ID helpIdScreenLayout
+  "Escolha dos controles disponíveis:\n"\
+  "\n"\
+  "\x95 Nada: nenhum controle.\n"\
+  "\x95 Pausa: marque para pausar a emulação.\n"\
+  "\x95 Turbo: marque para acelerar a emulação.\n"\
+  "\x95 Select/Start/B/A: emula botões do Gameboy.\n"\
+  "\x95 Tempo: Mostra o tempo de jogo.\n"\
+  "\x95 Carga: Mostra a carga da bateria do Palm.\n"\
+  "\x95 Veloc: Mostra a velocidade de emulação.\n"\
+  "\x95 Clock: display the time of day."
 
 //=== About ===============================================================
 
@@ -108,10 +545,10 @@ FORM ID formIdAbout AT (2 BOTTOM@160-2 160-2-2 160-2-2)
 BEGIN
   TITLE "Sobre Phoinix"
 
-  FORMBITMAP AT (5 18) BITMAP bmpIdAbout
-  LABEL "Emulador de Gameboy\x99" AUTOID AT (15 85) FONT 1
+  FORMBITMAP AT (6 18) BITMAP bmpIdAbout
+  LABEL "Emulador de Gameboy\x99" AUTOID AT (15 80) FONT 1
 
-  LABEL "\xa9 ##COPYRIGHT##"             AUTOID AT (PREVLEFT 100)
+  LABEL "\xa9 ##COPYRIGHT##"             AUTOID AT (PREVLEFT 95)
   LABEL "http://phoinix.sourceforge.net" AUTOID AT (PREVLEFT PREVBOTTOM-1)
   LABEL "mailto:palm.gb_emu@gmx.de"      AUTOID AT (PREVLEFT PREVBOTTOM-1)
 
@@ -119,449 +556,64 @@ BEGIN
   LABEL "v.##VERSION##" AUTOID AT (RIGHT@160-2-8 PREVTOP)
 END
 
-BITMAPGREY bmpIdAbout "Phoinix.bmp" COMPRESS
+BITMAP ID bmpIdAbout
+  COMPRESS
+BEGIN
+  BITMAP "Phoinix.bmp"   BPP 2 DENSITY 72
+  BITMAP "Phoinixhr.bmp" BPP 2 DENSITY 144
+END
 
 STRING ID helpIdAbout
   "Phoinix v.##VERSION##\n"\
   "Build ##BUILD##\n"\
   "\n"\
-  "Phoinix é software grátis, distribuído sob licença pública GNU, olhe "\
-  "em www.gnu.org/copyleft/gpl.html. "\
-  "Nem mesmo pense em pagar por isto! Se você gostaria de fazer algo de "\
-  "bom pra mim, me mande alguns biscoitos neste endereço:\n"\
+  "Phoinix é um software livre, distribuido sob a licença pública GNU, "\
+  "veja em www.gnu.org/copyleft/gpl.html. "\
+  "Nem pense em pagar por ele!! Se quiser ser legal comigo "\
+  "envie biscoitos para este endereço:\n"\
   "##ADDRESS##"\
   "\n"\
   "\"Palm\" é uma marca registrada da Palm.\n"\
   "\"Gameboy\" é uma marca registrada da Nintendo.\n"\
   "\n"\
-  "AVISO IMPORTANTE: Este software faz coisas perigosas com sua "\
-  "Palm Computing\xae Platform! Podendo danificar quaisquer dados "\
-  "guardados por outras aplicações. Também há a chance de que você "\
-  "precise fazer um hard reset apagando todos os seus dados e "\
-  "programas.\n"\
+  "AVISO URGENTE: Ao emular, a proteção da memória do seu Palm é "\
+  "desligada! Isso pode danificar os dados armazenado em outros "\
+  "aplicativos. Você pode precisar também realizar um \"hard reset\", "\
+  "apagando assim todos seus dados e programas.\n"\
   "\n"\
-  "Se Phoinix pega um erro ele cria um documento sobre o travamento. Por "\
-  "favor entre em contato comigo via palm.gb_emu@gmx.de.\n"\
+  "Se o Phoinix encontrar um erro, ele cria um banco de dados da falha. "\
+  "Por favor entre em contato comigo no palm.gb_emu@gmx.de.\n"\
   "\n"\
-  "Agradecimentos vão para:\n"\
-  "\x95 Till Harbaum por me infectar com o bug Palm. Sem ele, eu não "\
-  "teria feito esta coisa maldita!\n"\
-  "\x95 Jeff Frohwein por juntar todos os tipos de software e "\
-  "documentação para o apaixonado desenvolvedor de Gameboy.\n"\
-  "\x95 Todas as pessoas que enviaram dicas e comentários. Espero que "\
-  "vocês estejam felizes agora!\n"\
-  "\x95 Todo o pessoal ajudando software gratuíto. Para desenvolvimento "\
-  "eu usei o GNU tool chain.\n"\
+  "Gostaria de agradecer a:\n"\
+  "\x95 Till Harbaum por me infectar com o virús do Palm. Sem ele eu não "\
+  "teria começado este projeto!\n"\
+  "\x95 Jeff Frohwein por colecionar todo tipo de software e documentação "\
+  "para um desenvolvedor de Gameboy apaixonado.\n"\
+  "\x95 All translators who translated Phoinix into their favourite "\
+  "language.\n"\
+  "\x95 Todas as pessoas que enviaram relatórios e comentários. Espero "\
+  "que estejam feliz agora!\n"\
+  "\x95 A todos que apoiam o software livre. Para desenvolver eu usei "\
+  "uma série de ferramentas GNU.\n"\
   "\n"\
-  "Por favor lembre-se: todos os programadores e companhias tem o "\
-  "direito de vender seus produtos. Pirataria de Software é crime! Por "\
-  "este motivo você entenderá que eu não posso lhes dizer onde pegar "\
-  "jogos comerciais. No entanto, alguns desenvolvedores fornecem "\
-  "software freeware que podem ser encontrados procurando pela "\
-  "internet.\n"\
+  "Lembre-se: todos os programadores e empresas tem direito de vender "\
+  "seus produtos. Pirataria é crime! Por este motivo você deve "\
+  "entender porque NÃO posso dizer onde obter jogos comerciais. "\
+  "Contudo, alguns desenvolvedores criaram programas livres que podem "\
+  "ser encontrados na internet.\n"\
   "\n"\
-  "Links para jogos grátis e mais insformações podem ser encontrados no "\
-  "Phoinix website."
-
-//=== Button Mapping ======================================================
-
-FONT ID fontIdButtonMapping FONTID fontButtonMapping "buttons.fnt"
-
-FORM ID formIdButtonMapping AT (2 BOTTOM@160-2 160-2-2 87)
-  MODAL
-  HELPID helpIdButtonMapping
-  DEFAULTBTNID buttonIdButtonMappingCancel
-BEGIN
-  TITLE "Mapeamento de Botões"
-
-  FORMBITMAP AT (80-8-(2*30) 28+2) BITMAP bmpIdButtonMapping1
-  POPUPTRIGGER "" ID popupIdButtonMappingDb
-    AT (80-6-(16/2)-(2*30) 28+2+16+2     0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingDb AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingDb listIdButtonMappingDb
-
-  FORMBITMAP AT (80-8-(1*30) 28+4) BITMAP bmpIdButtonMapping1
-  POPUPTRIGGER "" ID popupIdButtonMappingAb
-    AT (80-6-(16/2)-(1*30) 28+4+16+2     0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingAb AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingAb listIdButtonMappingAb
-
-  FORMBITMAP AT (80-8        28+0) BITMAP bmpIdButtonMapping2
-  POPUPTRIGGER "" ID popupIdButtonMappingUp
-    AT (80-6-(16/2)        BOTTOM@28+0-2 0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingUp AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingUp listIdButtonMappingUp
-  POPUPTRIGGER "" ID popupIdButtonMappingDn
-    AT (80-6-(16/2)        28+0+23+2     0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingDn AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingDn listIdButtonMappingDn
-
-  FORMBITMAP AT (80-8+(1*30) 28+4) BITMAP bmpIdButtonMapping1
-  POPUPTRIGGER "" ID popupIdButtonMappingTd
-    AT (80-6-(16/2)+(1*30) 28+4+16+2     0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingTd AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingTd listIdButtonMappingTd
-
-  FORMBITMAP AT (80-8+(2*30) 28+2) BITMAP bmpIdButtonMapping1
-  POPUPTRIGGER "" ID popupIdButtonMappingMm
-    AT (80-6-(16/2)+(2*30) 28+2+16+2     0 AUTO)
-    LEFTANCHOR FONT fontButtonMapping
-  LIST "" ID listIdButtonMappingMm AT (PREVLEFT+8 PREVTOP 16 0)
-    NONUSABLE FONT fontButtonMapping
-  POPUPLIST ID popupIdButtonMappingMm listIdButtonMappingMm
-
-  BUTTON "OK"       ID buttonIdButtonMappingOk
-    AT (2+3           BOTTOM@87-1-4 44        AUTO)
-  BUTTON "Cancelar" ID buttonIdButtonMappingCancel
-    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
-END
-
-BITMAP bmpIdButtonMapping1 "button1.bmp" COMPRESS
-
-BITMAP bmpIdButtonMapping2 "button2.bmp" COMPRESS
-
-STRING ID helpIdButtonMapping
-  "Escolha como os botões emulados são mapeados nas teclas. \"Select\" "\
-  "e \"Start\" estão na tela e não podem ser mapeados.\n"\
-  "\n"\
-  "O GamePad da WorldWide Widget Works é suportado se presente. Suas "\
-  "teclas não podem ser mapeadas pois o layout é fixo.\n"\
-  "\n"\
-  "Para o Handspring GameFace mapeie \"Esquerda\" e \"Direita\" para as "\
-  "teclas AddressBook e ToDo respectivamente. Mapeie \"A\" e \"B\" como "\
-  "desejar."
-
-//=== No Game Installed ===================================================
-
-FORM ID formIdNoGame AT (0 0 160 160)
-  MENUID menuIdNoGame
-BEGIN
-  TITLE "Phoinix"
-
-  LABEL "Nenhum jogo encontrado."           AUTOID AT (CENTER@80 40) FONT 2
-  LABEL "Para links de jogos grátis visite" AUTOID AT (CENTER@80 80)
-  LABEL "phoinix.sourceforge.net"           AUTOID AT (CENTER@80 PREVBOTTOM)
-END
-
-MENU ID menuIdNoGame
-BEGIN
-  PULLDOWN "Opções"
-  BEGIN
-    MENUITEM "Dicas..."         ID menuIdNoGameOptionsTips
-    MENUITEM "Sobre Phoinix..." ID menuIdNoGameOptionsAbout
-  END
-END
-
-STRING ID helpIdNoGame
-  "Phoinix somente emula o hardware do Gameboy, para jogar um jogo "\
-  "necessita o dado binário do jogo. Você os encontrará como arquivos, "\
-  "freqüentemente com uma \"*.GB\" como extensão.\n"\
-  "\n"\
-  "Depois de obter um arquivo de jogo, este deve ser convertido para um "\
-  "documento Palm database (\"*.PDB\"). Isto é alcançado com o conversor "\
-  "\"gb2pdb\" no seu computador pessoal. Por favor leia a documentação!"
-
-//=== Game Manager ========================================================
-
-ALERT ID alertIdManagerListError
-  ERROR
-BEGIN
-  TITLE "Erro de Aplicação"
-  MESSAGE "A lista de jogos não pôde ser criada."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdManagerListIncomplete
-  ERROR
-BEGIN
-  TITLE "Erro de Aplicação"
-  MESSAGE "Devido a problemas de memória a lista de jogos está incompleta."
-  BUTTONS "OK"
-END
-
-FORM ID formIdManager AT (0 0 160 160)
-  MENUID menuIdManager
-BEGIN
-  TITLE "Phoinix"
-
-  POPUPTRIGGER "" ID popupIdManagerName AT (0 17 0 AUTO) LEFTANCHOR
-  LIST "" ID listIdManagerName
-    AT (PREVRIGHT+13 PREVTOP 160-(PREVRIGHT+13)-2 0) NONUSABLE
-  FIELD ID fieldIdManagerName
-    AT (PREVLEFT+4 PREVTOP 160-(PREVLEFT+4)-2 AUTO) FONT 1
-    UNDERLINED MAXCHARS dmDBNameLength-1 AUTOSHIFT
-  POPUPLIST ID popupIdManagerName listIdManagerName
-
-  LABEL "Location:" labelIdManagerLocation AT (RIGHT@55 32) FONT 1
-  POPUPTRIGGER "" ID popupIdManagerLocation 
-    AT (PREVRIGHT+5 PREVTOP AUTO AUTO) LEFTANCHOR
-  LIST "" ID listIdManagerLocation
-    AT (PREVRIGHT PREVTOP 160-PREVRIGHT-2 AUTO) NONUSABLE
-  POPUPLIST ID popupIdManagerLocation listIdManagerLocation
-
-  LABEL "Tipo:" AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
-  LABEL "(30 chars)-------------------" labelIdManagerType
-    AT (PREVRIGHT+5 PREVTOP)
-  LABEL "ROM:"  AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
-  LABEL "(15 chars)-----" labelIdManagerRom AT (PREVRIGHT+5 PREVTOP)
-  LABEL "RAM:"  AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
-  LABEL "(15 chars)-----" labelIdManagerRam AT (PREVRIGHT+5 PREVTOP)
-
-  BUTTON "JOGAR!" ID buttonIdManagerGo
-    AT (CENTER@80 BOTTOM@160-1 80+2 72+2) FONT 2
-
-  GRAFFITISTATEINDICATOR AT (160-10 160-(72+2)-15)
-END
-
-MENU ID menuIdManager
-BEGIN
-  PULLDOWN "Ações"
-  BEGIN
-    MENUITEM "Apagar Jogo..." ID menuIdManagerActionsDeleteGame
-  END
-
-  PULLDOWN "Editar"
-  BEGIN
-    MENUITEM "Desfazer"          ID sysEditMenuUndoCmd      "U"
-    MENUITEM "Recortar"          ID sysEditMenuCutCmd       "X"
-    MENUITEM "Copiar"            ID sysEditMenuCopyCmd      "C"
-    MENUITEM "Cola"              ID sysEditMenuPasteCmd     "P"
-    MENUITEM "Selecionar Tudo"   ID sysEditMenuSelectAllCmd "S"
-    MENUITEM SEPARATOR
-    MENUITEM "Teclado"           ID sysEditMenuKeyboardCmd  "K"
-    MENUITEM "Ajuda do Graffiti" ID sysEditMenuGraffitiCmd  "G"
-  END
-
-  PULLDOWN "Opções"
-  BEGIN
-    MENUITEM "Mapeamento de Botões..." ID menuIdManagerOptionsButtonMapping
-    MENUITEM SEPARATOR
-    MENUITEM "Dicas..."                ID menuIdManagerOptionsTips
-    MENUITEM "Sobre Phoinix..."        ID menuIdManagerOptionsAbout
-  END
-END
-
-STRING ID helpIdManager
-  "Escolha o jogo que você quer jogar de duas formas:\n"\
-  "\x95 Use a seta para escolher da lista.\n"\
-  "\x95 Pressione os botões de scroll.\n"\
-  "\n"\
-  "Para iniciar a emulação aponte \"JOGAR!\" e o jogo inicia como se o "\
-  "Gameboy acabasse de ser ligado.\n"\
-  "\n"\
-  "Você pode renomear o jogo para sua comodidade. Para cancelar a "\
-  "entrada simplesmente selecione o jogo na lista novamente."
-
-ALERT ID alertIdManagerDeleteGame
-  WARNING
-  DEFAULTBUTTON 1
-BEGIN
-  TITLE "Apagar Jogo"
-  MESSAGE "Tem certeza de que quer apagar \"^1\"?"
-  BUTTONS "OK" "Cancelar"
-END
-
-ALERT ID alertIdManagerDeleteError
-  ERROR
-BEGIN
-  TITLE "Apagar Jogo"
-  MESSAGE "Não pôde apagar o jogo."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdManagerRenameError
-  ERROR
-BEGIN
-  TITLE "Renomear Jogo"
-  MESSAGE "Não pôde renomear o jogo."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdManagerCantRun
-  ERROR
-BEGIN
-  TITLE "Erro de Emulação"
-  MESSAGE "Este jogo não pôde ser executado."
-  BUTTONS "OK"
-END
-
-STRING ID stringIdManagerGameError
-  "Falha"
-
-STRING ID stringIdManagerGameUnknown
-  "Desconhecido"
-
-STRING ID stringIdManagerGameKBytes
-  "%u KBytes"
-
-STRING ID stringIdManagerGameMbc2
-  "512 \xd7 4 Bits"
-
-//=== Saved States ========================================================
-
-ALERT ID alertIdStatesLoadError
-  ERROR
-BEGIN
-  TITLE "Estado do Jogo"
-  MESSAGE "Não pôde carregar as preferências do jogo."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdStatesSaveError
-  ERROR
-BEGIN
-  TITLE "Estado do Jogo"
-  MESSAGE "Não pôde salvar as preferências do jogo."
-  BUTTONS "OK"
-END
-
-//=== Emulation ===========================================================
-
-FORM ID formIdEmulation AT (0 0 160 160)
-  MENUID menuIdEmulation
-BEGIN
-  BUTTON "Select" ID buttonIdEmulationSelect
-    AT (RIGHT@80-6 BOTTOM@159 30 AUTO) DISABLED
-  BUTTON "Start"  ID buttonIdEmulationStart
-    AT (80+6       BOTTOM@159 30 AUTO) DISABLED
-
-  POPUPTRIGGER "" ID popupIdEmulationInfo
-    AT (120 BOTTOM@159 54 AUTO) LEFTANCHOR
-  /* NOTE: the texts have to match the EmulationInfoType in emulation.h! */
-  LIST "Tempo jogado" "Bateria" "Velocidade" ID listIdEmulationInfo
-    AT (PREVLEFT+4 PREVTOP AUTO AUTO) NONUSABLE VISIBLEITEMS 3
-  POPUPLIST ID popupIdEmulationInfo listIdEmulationInfo
-
-  CHECKBOX "Exec." ID checkboxIdEmulationRun AT (0 BOTTOM@159 AUTO AUTO)
-END
-
-// This form is for GB screen's bounds only, not to be shown.
-FORM ID formIdEmulationScreen AT (0 0 240 240)
-BEGIN
-  GADGET ID gadgetIdEmulationSmall AT (0 0   160 144)
-  GADGET ID gadgetIdEmulationH330  AT (40 36 160 144)
-END
-
-MENU ID menuIdEmulation
-BEGIN
-  PULLDOWN "Jogo"
-  BEGIN
-    MENUITEM "Sair"    ID menuIdEmulationGameQuit
-    MENUITEM SEPARATOR
-    MENUITEM "Resetar" ID menuIdEmulationGameReset
-  END
-
-  PULLDOWN "Opções"
-  BEGIN
-    MENUITEM "Mapeamento de Botões..." ID menuIdEmulationOptionsButtonMapping
-    MENUITEM SEPARATOR
-    MENUITEM "Dicas..."                ID menuIdEmulationOptionsTips
-    MENUITEM "Sobre Phoinix..."        ID menuIdEmulationOptionsAbout
-  END
-END
-
-STRING ID helpIdEmulation
-  "Para reiniciar um jogo como se desligando e religando um Gameboy de "\
-  "verdade, use \"Resetar\".\n"\
-  "\n"\
-  "Para parar um jogo momentâneamente, desmarque \"Executar\". Isto é o "\
-  "ideal para captura de telas."
-
-ALERT ID alertIdEmulationSetupError
-  ERROR
-BEGIN
-  TITLE "Erro de Emulação"
-  MESSAGE "Não pode preparar a emulação.\n"\
-          "\x95 Certifique-se de que tenha memória livre.\n"\
-       	  "\x95 Atualmente Phoinix não pode ser executado na flash ROM."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdEmulationRunError
-  ERROR
-BEGIN
-  TITLE "Erro de Emulação"
-  MESSAGE "Um erro ocorreu durante a emulação. Por favor contate \n"\
-          "palm.gb_emu@gmx.de\n"\
-          "para mais ajuda. Descreva as circunstâncias o mais preciso que "\
-          "você possa!"
-  BUTTONS "OK"
-END
+  "Links para jogos grátis e mais informações podem ser obtidos no site do "\
+  "Phoinix."
 
 //=== VFS =================================================================
 
-STRING ID stringerrNone                    "Nenhum erro"
-STRING ID stringvfsErrBufferOverflow       "Buffer é muito pequeno"
-STRING ID stringvfsErrFileGeneric          "Erro geral de arquivo"
-STRING ID stringvfsErrFileBadRef           "Referência de arquivo inválida"
-STRING ID stringvfsErrFileStillOpen        "Arquivo ainda está aberto"
-STRING ID stringvfsErrFilePermissionDenied "Arquivo é somente leitura"
-STRING ID stringvfsErrFileAlreadyExists    "Arquivo já existe"
-STRING ID stringvfsErrFileEOF              "EOF atingido"
-STRING ID stringvfsErrFileNotFound         "Arquivo não encontrado"
-STRING ID stringvfsErrVolumeBadRef         "Referência de volume inválida"
-STRING ID stringvfsErrVolumeStillMounted   "Volume ainda montado"
-STRING ID stringvfsErrNoFileSystem         "Nenhum sistema de arquivo "\
-                                           "instalado"
-STRING ID stringvfsErrBadData              "Dado ruim"
-STRING ID stringvfsErrDirNotEmpty          "Diretório não está vazio"
-STRING ID stringvfsErrBadName              "Arquivo ou nome de volume "\
-                                           "inválido"
-STRING ID stringvfsErrVolumeFull           "Sem espaço suficiente no "\
-                                           "dispositivo"
-STRING ID stringvfsErrUnimplemented        "Função não implementada"
-STRING ID stringvfsErrNotADirectory        "Não é um diretório"
-STRING ID stringvfsErrIsADirectory         "Não é um arquivo comum"
-STRING ID stringvfsErrDirectoryNotFound    "Diretório não encontrado"
-STRING ID stringvfsErrNameShortened        "Nome de arquivo abreviado"
-STRING ID stringvfsErrUnknown              "Erro desconhecido"
-STRING ID stringdmErrAlreadyExists         "Base de dados já existe"
-
-STRING ID stringCreateDir                  "criando diretório Phoinix"
-STRING ID stringExportDb                   "exportando base de dados de "\
-                                           "jogo"
-STRING ID stringFetchHead                  "carregando informação de "\
-                                           "cartucho de jogo"
-STRING ID stringScanForGames               "procurando base de dados de "\
-                                           "jogo"
-STRING ID stringImportDb                   "importando base de dados de "\
-                                           "jogo"
-STRING ID stringMoveDb                     "movendo base de dados de jogo"
-STRING ID stringDeleteDb                   "apagando base de dados de jogo"
-
-ALERT ID alertIdVFS
-  ERROR
-BEGIN
-  TITLE "Erro no sistema de arquivos"
-  MESSAGE "Erro enquanto ^1: ^2."
-  BUTTONS "OK"
-END
-
-ALERT ID alertIdGeneric
-  ERROR
-BEGIN
-  TITLE "Erro"
-  MESSAGE "Erro enquanto ^1."
-  BUTTONS "OK"
-END
-
 ALERT ID alertIdOverwrite
-  CONFIRMATION
+  WARNING
+  DEFAULTBUTTON 1
 BEGIN
-  TITLE "Aviso"
-  MESSAGE "A operação de cópia atua pode sobreescrever um destino "\
-          "existente. Continua operação, mesmo assim?"
-  BUTTONS "Sim" "Não"
+  TITLE "Mudar localização"
+  MESSAGE "\"^1\" já existe em \"^2\". Você quer sobrescrever?"
+  BUTTONS "OK" "Cancelar"
 END
 
 //=== Miscellaneous =======================================================
@@ -572,6 +624,68 @@ BEGIN
   FORMBITMAP AT (5 5) BITMAP bmpIdBusy
 END
 
-BITMAP bmpIdBusy "eggtimer.bmp" COMPRESS
+BITMAP ID bmpIdBusy
+  COMPRESS
+BEGIN
+  BITMAP "eggtimer.bmp"   BPP 1 DENSITY 72
+  BITMAP "eggtimerhr.bmp" BPP 1 DENSITY 144
+END
+
+ALERT ID alertIdError
+  ERROR
+  HELPID helpIdError
+BEGIN
+  TITLE "Erro no Phoinix"
+  MESSAGE "Ocorreu um erro ^1:\n^2."
+  BUTTONS "OK"
+END
+
+// This string table contains all error messages that can be shown via
+// the above alert.
+// ---- To text editors:
+// The maximum length of each string is miscErrorStringMaxLength
+// (99 characters).
+// ---- To programmers:
+// Check the strings carefully against the named constants in the
+// source file 'misc.h'!
+STRINGTABLE ID stblIdError "" ""
+  /* actions that produce errors: */
+    "ao inicializar"
+    "ao retornar ao jogo"
+    "ao construir uma lista de jogos"
+    "com o sistema de armazenamento em cartão"
+    "com o sistema operacional"
+    "com o kernel do emulador"
+    "ao apagar o jogo"
+    "ao renomear o jogo"
+    "ao mudar a localização"
+  /* error that occur: */
+    "a memória do sistema está cheia"
+    "a tela não é suportada"
+    "a versão do sistema não é suportado"
+    "os novos jogos não foram totalmente importados"
+    "não foi possível realizar uma busca no cartão de memória"
+    "a posição não foi gravada"
+    "the state was not loaded"
+    "não foi possível gravar, o jogo foi movido para \"%s\""
+    "ocorreu um erro de runtime"
+    "o jogo não pode ser rodado"
+    "o arquivo não foi criado"
+    "o diretório do Phoinix não pode ser criado"
+    "o nome contém caracteres inválidos"
+    "a memória está protegida contra gravações"
+    "o cartão de memória está protegido contra gravações"
+    "o nome já existe"
+    "ocorreu um erro de gravação"
+    "ocorreu um erro de leitura"
+    "erro de leitura, uma nova posição foi criada"
+    "a unidade está cheia"
+
+STRING ID helpIdError
+  "Leia a documentação para maiores informações. Visite a página em "\
+  "phoinix.sourceforge.net\n"\
+  "ou me mande um e-mail para\n"\
+  "palm.gb_emu@gmx.de\n"\
+  "(inclua qualquer informação útil)."
 
 //=== The end =============================================================
