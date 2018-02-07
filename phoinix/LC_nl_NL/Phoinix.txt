@@ -1,0 +1,84 @@
+Phoinix.txt
+===========
+
+Wat is Phoinix?
+---------------
+
+Phoinix ['feniks] is het Griekse woord voor een dadel palm. Het is ook 
+de naam van de mysterieuze vogel die zichzelf na 500 jaar verbrand, en 
+weer herboren wordt uit zijn eigen as.
+
+In deze context is Phoinix de naam van een Nintendo Gameboy(TM) emulator
+voor het Palm OS(R) Computer Platform. Vroeger stond hij bekend als
+PalmBoy, maar Palm Inc. heeft het woord "Palm" als een handelsmerk
+geregistreerd.
+
+Andere talen
+------------
+
+De standaard taal van Phoinix is Engels. Andere talen worden alleen 
+binnen de applicatie zelf en de README bestanden ondersteund. Alle andere 
+teksten zijn op dit moment in het Engels, sorry.
+
+Copyleft
+--------
+
+Copyright 2000-2002 Bodo Wenzel.
+
+Dit programma is vrije software; u mag het redistributeren en/of wijzigen
+onder de termen van de GNU General Public License zoals gepubliceerd
+door de Free Software Foundation; oftewel versie 2 van de licentie, of
+(naar eigen keus) een latere versie.
+
+Dit programma wordt uitgegeven in de hoop, dat het nuttig zal zijn,
+Maar ZONDER ENIGE GARANTIE; zelfs zonder een garantie van 
+VERHANDELBAARHEID of BRUIKBAARHEID VOOR EEN SPECIFIEK DOEL. Bekijk 
+de GNU General Public License voor meer details.
+
+U zou een kopie van de GNU General Public License bij dit programma
+gekregen moeten hebben; Indien dat niet zo is, schrijf de Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+Snelle start
+------------
+
+Bezoek de homepage op http://phoinix.sourceforge.net zoals genoemd in 
+de info teksten van de applicatie. Daar is veel meer informatie en 
+andere zooi te vinden.
+
+Kies het archief met het taalpakket van uw keuze en pak het (Als u deze
+tekst leest, heeft u dat waarschijnlijk gedaan). Installeer dan het
+bestand "Phoinix.prc" op de gebruikelijke manier.
+
+Om u aan de slag te krijgen, er staan wat gratis spellen in het archief
+"freegame.zip". Ze zijn al geconverteerd, pak ze uit en installeer ze
+zoals u dat eerder deed.
+
+Veel plezier!
+
+U zou ten slotte ook nog de documentatie kunnen lezen. Zodat u de boel
+makkelijk kunt onderhouden, ik heb deze webbestanden ingepakt in "doc.zip".
+Download dit archief, en pak de bestanden uit waar u wil. U kunt een
+browser naar keuze, of een tekst-editor gebruiken om ze te lezen.
+
+Indien u hulp nodig heeft
+-------------------------
+
+Lees alle documentatie (in "doc.zip" en de ingebouwde tips) goed door.
+De kans bestaat dat uw vraag al eens is gesteld, en beantwoord.
+
+Als uw vraag nog NIET is beantwoord, stuur dan een email met genoeg
+informatie naar het juiste adres in de documentatielijst. Vragen als 
+"Waarom werkt het niet?" zijn veel te algemeen en zullen niet beantwoord
+worden. Beschrijf uw probleem duidelijk en in het Engels.
+
+Vraag ook niet waar u commerci‰le spel images kunt krijgen. Het verspreiden
+hiervan is over de hele wereld illegaal! Dit soort verzoekjes worden
+stilletjes genegeerd.
+
+Handelsmerken
+----------
+
+"Palm" is een geregistreerd handelsmerk van Palm.
+"Gameboy" is een geregistreerd handelsmerk van Nintendo.
+

@@ -1,0 +1,95 @@
+Phoinix.txt
+===========
+
+Che cos'è Phoinix?
+------------------
+
+Phoinix ['foiniks], in greco, vuol dire palma da datteri. Phoinix
+(Fenice) è anche il nome dell'uccello mitologico che dopo 500 anni
+bruciò se stesso e rinacque dalle proprie ceneri.
+
+In questo contesto "Phoinix" è il nome di un emulatore del
+GameboyNintendo (TM) per i palmari basati sul sistema operativo
+Palm(R). In passato questo stesso emulatore si chiamava "PalmBoy", ma
+la Palm Inc. detiene un brevetto sulla parola "Palm".
+
+Lingue supportate
+-------------------
+
+La lingua standard di Phoinix è l'inglese. Sono supportate altre
+lingue, ma solo nei testi del programma e nel file READMEs. Tutti gli
+altri testi sono in inglese, "sorry".
+
+"Copyleft" 
+--------------
+
+Copyright 2000-2002 Bodo Wenzel.
+
+Questo programma è "freeware"; può essere distribuito e/o modificato
+rispettando le condizioni riportate nella Licenza Pubblica Generica
+GNU (General Public License) della "Free Software Foundation"; oppure
+ottemperando quanto riportato nella seconda versione della medesima
+Licenza, o (a vostra discrezione) di una qualsiasi versione
+successiva.
+
+Questo programma viene distribuito nella speranza che possa essere
+gradito/utile, ma SENZA ALCUNA GARANZIA; nemmeno senza una implicita
+garanzia di "NEGOZIABILITA`" o di "ADEGUATEZZA PER UNO SPECIFICO
+SCOPO". Si veda la Licenza Pubblica Generica GNU per maggiori
+dettagli.
+
+Allegata a questo programma, avreste dovuto trovare una copia della
+Licenza Pubblica Generica GNU. Se così non fosse, se ne può ottenere
+una scrivendo alla Free Software Foundation, Inc., 59 Temple Place,
+Suite 330, Boston, MA 02111-1307 USA
+
+Per iniziare subito
+------------------
+
+Siete pregati di visitare la homepage di Phoinix
+http://phoinix.sourceforge.net così come indicato nel programma
+stesso. Vi potrete infatti trovare diverse notizie utili e alcuni
+programmi di cui potreste aver bisogno.
+
+Scegliete l'archivio corrispondente alla lingua che preferite e
+scompattatelo (se state leggendo questo testo, probabilmente l'avete
+già fatto). Ora potete installare il file "Phoinix.prc" nel solito
+modo.
+
+Nell'archivio "freegame.zip" si trovarno alcuni giochi freeware, già
+convertiti nel formato pdb, così che possiate provare subito
+Phoinix. Scompattate freegame.zip ed istallate i file sul palmare
+impiegando le normali procedure.
+
+Ora divertitevi...
+
+In seguito, potreste voler leggere le istruzioni. Per rendere semplice
+il compito di aggiornare la documentazione ho semplicemente trasferito
+il sito internet all'interno del file "doc.zip". Downloadatelo e
+scompattatelo in una directory qualsiasi. Per visualizzare i file
+potete usare il "browser" che preferite; anche un editor di testi può
+andare bene.
+
+Se avete bisogno di aiuto
+-------------------------
+
+Leggete attentamente tutta la documentazione fornita, sia quella
+presente nel file "doc.zip" che i suggerimenti inseriti nel programma
+stesso. Molto probabilmente troverete le risposte alle vostre domande.
+
+Se non trovaste risposta alle vostre domande, mandate una e-mail
+all'indirizzo specificato nella documentazione, riferendo il problema
+nel modo più dettagliato possibile. Domande come: "Perché non
+funziona?" sono troppo generiche e non verranno prese in
+considerazione. Descrivete il vostro problema in modo chiaro.
+
+Non mandate e-mail chiedendo dove si possono trovare le "immagini"
+delle ROM di giochi "commerciali" (ovvero protetti da copyright). Ciò
+è illegale in tutto il mondo! Tali richieste saranno silenziosamente
+ignorate.
+
+Trademarks
+----------
+
+"Palm" è un marchio registrato dalla Palm.
+"Gameboy" è un marchio registrato dalla Nintendo.

@@ -1,0 +1,115 @@
+README for Phoinix
+==================
+
+If you're looking for a Readme for users, please look in one of the
+subdirectories LC_* which contain localized versions of text and
+resource. This is for programmers who like to build it from source.
+
+What is Phoinix?
+----------------
+
+Phoinix ['foiniks] is the greek word for date palm. It is the name for
+the mystic bird which burns itself after 500 years and is reborn out
+of its ashes, too.
+
+In this context Phoinix is the name of a Nintendo Gameboy(TM) emulator
+for the Palm OS(R) Computing Platform. It was formerly known as
+PalmBoy, but Palm Inc. claims the word "Palm" as a trademark.
+
+Copyleft
+--------
+
+Copyright 2000-2002 Bodo Wenzel.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+USA
+
+Building
+--------
+
+The source files are created to be used with the GNU tool set. You'll
+find the SDK at Palm's site (http://www.palm.com). You need the header
+files for PalmOS 4 or better.
+
+Currently there are no experiences with this SDK on Windows...
+
+Unpack the source's archive and enter "make". The executables are in
+the directories beginning with LC_, separated by language.
+
+Before trying to compile, read the chapter 'Prerequisites', please.
+
+Prerequisites
+-------------
+
+Phoinix supports HandEra's H330 and the GamePad made by WorldWide
+Widget Works. To include this support you need the corresponding
+header files in your system include directory.
+
+The HandEra SDK can be obtained from
+http://www.handera.com/support/developsupport.asp.
+Please install all files from the include branch in a directory named
+'HandEra' under your system include directory so that Vga.h becomes
+<your-inc-path>/HandEra/Vga.h.
+
+The GamePad driver kit can be obtained from
+http://www.palmgamepad.com/
+and in the developers' section is a link to the file
+GamePadDevKit.zip. Copy GPDLib.h from this archive to your system
+include directory.
+
+Your system include path is probably something like
+/usr/local/palmdev/include, but you might want to ask your gcc with
+"-dumpspecs".
+
+Unfortunately some of these files are in DOS format (end-of-line by
+CR/LF) and have to be converted to Unix style (e.g. with recode or
+dos2unix). If you get "stray \ " error messages, you didn't correctly
+convert these files and they are still in DOS mode.
+
+The calls of PilRC (the ressource compiler) use several new options;
+you need at least version 2.9 (or 2.8p6)!
+
+Getting help
+------------
+
+Please use the mailing list for developers:
+http://lists.sourceforge.net/mailman/listinfo/phoinix-devel
+For special cases mail the author:
+palm.gb_emu@gmx.de
+
+Contribute translations
+-----------------------
+
+To add another localizes version, create an appropriate directory
+LC_<language>_<country> with <language> in small letters and <country>
+in capital. Create three files in this directory:
+
+'GPL.txt' contains the translated GNU General Public License.
+
+'Phoinix.txt' contains the translated Readme for users.
+
+'Phoinix.rcp.in' contains the source for all resources with translated
+texts.
+
+Please use the english (LC_en_GB) version as basis.
+
+The homepage provides an archive with a verbose description how and
+what to translate. Please download this file and read it.
+
+Trademarks
+----------
+
+"Palm" is a registered trademark of Palm.
+"Gameboy" is a registered trademark of Nintendo.

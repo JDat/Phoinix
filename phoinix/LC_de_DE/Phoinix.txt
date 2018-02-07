@@ -1,0 +1,88 @@
+Phoinix.txt
+===========
+
+Was ist Phoinix?
+----------------
+
+Phoinix ['foiniks] ist das griechische Wort für Dattelpalme. Außerdem
+ist es der Name des mystischen Vogels, der sich nach 500 Jahren selbst
+verbrennt und aus seiner Asche wiedergeboren wird.
+
+In diesem Kontext ist Phoinix der Name eines Nintendo Gameboy(TM)
+Emulators für die Palm OS(R) Computing Platform. Er war früher als
+PalmBoy bekannt, aber Palm Inc. beansprucht das Wort "Palm" als
+Warenzeichen.
+
+Andere Sprachen
+---------------
+
+Die Standardsprache von Phoinix ist Englisch. Andere Sprachen werden
+nur in der Applikation und den READMEs unterstützt. Alle anderen Texte
+sind momentan leider in englisch.
+
+Copyleft
+--------
+
+Copyright 2000-2002 Bodo Wenzel.
+
+Dieses Programm ist freie Software. Sie können es unter den
+Bedingungen der GNU General Public License, wie von der Free Software
+Foundation veröffentlicht, weitergeben und/oder modifizieren, entweder
+gemäß Version 2 der Lizenz oder (nach Ihrer Option) jeder späteren
+Version.
+
+Die Veröffentlichung dieses Programms erfolgt in der Hoffnung, daß es
+Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne
+die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FÜR
+EINEN BESTIMMTEN ZWECK. Details finden Sie in der GNU General Public
+License.
+
+Sie sollten eine Kopie der GNU General Public License zusammen mit
+diesem Programm erhalten haben. Falls nicht, schreiben Sie an die Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+02111-1307, USA.
+
+Schneller Start
+---------------
+
+Bitte besuchen Sie die Homepage unter http://phoinix.sourceforge.net
+wie in den Infotexten der Applikation beschrieben. Dort gibt es jede
+Menge Informationen und vieles, was Sie vielleicht suchen.
+
+Wählen Sie das Archiv in der gewünschten Sprache, und entpacken Sie es
+(wenn Sie diesen Text lesen, haben Sie es vermutlich getan). Dann
+installieren Sie "Phoinix.prc" auf dem üblichen Weg.
+
+Für den Anfang gibt's einige freie Spiele im Archiv "freegame.zip".
+Sie sind bereits konvertiert, entpacken und installieren Sie sie
+einfach wie gehabt.
+
+Nun viel Spaß...
+
+Als nächstes werden Sie die Dokumentation lesen wollen. Um die
+Verwaltung zu vereinfachen, habe ich die Webdateien in "doc.zip"
+eingepackt. Bitte laden Sie sich dieses Archiv herunter und entpacken
+Sie es an beliebiger Stelle. Benutzen Sie irgendeinen Browser, um die
+Dokumente zu lesen, Sie können auch jeden Texteditor verwenden.
+
+Wenn Sie Hilfe brauchen
+-----------------------
+
+Lesen Sie sorgfältig die ganze Dokumentation (in "doc.zip" und den
+eingebauten Tipps). Sicher wurde Ihre Frage schon beantwortet.
+
+Wenn Sie denken, dass sie NICHT beantwortet wurde, schicken Sie eine
+Nachricht an die passende Adresse, die in den Dokumenten angegeben
+ist. Fragen wie "Warum geht's nicht?" sind viel zu allgemein, um
+beantwortet zu werden. Bitte schildern Sie Ihr Problem ausreichend
+deutlich.
+
+Fragen Sie nicht, wie Sie an Kopien von kommerziellen Spielen
+kommen. Das ist weltweit illegal! Solche Anfragen werden
+stillschweigend ignoriert.
+
+Warenzeichen
+------------
+
+"Palm" ist ein eingetragenes Warenzeichen von Palm.
+"Gameboy" ist ein eingetragenes Warenzeichen von Nintendo.

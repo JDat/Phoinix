@@ -1,0 +1,85 @@
+Phoinix.txt
+===========
+
+Qu'est-ce que Phoinix?
+----------------------
+
+Phoinix ['foiniks] est le mot grec pour palmier dattier. C'est aussi
+le nom d'un oiseau mythique venant de l'Egypte qui selon la légende se
+brûla de par lui-même et renît de ses cendres après 500 ans.
+
+Dans ce contexte Phoinix est le nom de l'émulateur Nintendo
+Gameboy(TM) pour la plateforme Palm OS. On l'a autrefois connu comme
+PalmBoy, mais Palm Inc. fît une réclamations de cette marque déposée.
+
+Autre langage
+-------------
+
+La langue standard de Phoinix est l'anglais. D'autres langues sont
+supporté dans l'application et le Lisez-moi. Tous les autres textes
+sont actuellement en anglais, désolé.
+
+Copyright
+---------
+
+Copyright 2000-2003 Bodo Wenzel.
+
+Ce programme est un logiciel libre; vous pouvez le redistribuer et/ou
+le modifier en vertu de la license public de GNU comme spécifié par la
+Free Software Foundation; de la version 2 de la license, ou (à votre
+option) toute version postérieure.
+
+Ce programme est distribué en l'espoir qu'il sera utile pour certain,
+SANS AUCUNE GARANTIE; SANS AUCUNE VALEUR MARCHANDE. Lisez la license
+public GNU pour de plus ample détails.
+
+Vous devriez avoir reçu une copie de la license public GNU avec ce
+produit. Si ce n'est pas le cas, écrivez à la Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+USA
+
+Démarage rapide
+---------------
+
+SVP, visité le site web http://phoinix.sourceforge.net tel que
+mentionné dans le fichier d'information de votre application. On y
+retrouve de nombreuse information pertinente.
+
+Sélectionné le fichier de votre langage, décompresser le Si vous lisez
+ce fichier, vous l'avez probablement déjà fait) Installez alors le
+fichier "Phoinix.prc".
+
+Pour vérifier si tout fonctionne convenablement, il y a quelques jeux
+libres dans les archives "freegame.zip". Ces jeux sont déjà convertit,
+ils suffit de les décompressé et de les installés. Ils sont déjà
+convertis, juste s'ouvrent et installent comme avant.
+
+Amusez-vous...
+
+Par la suite, vous pourriez souhaiter lire la documentation. Pour
+faciliter la maintenance, j'ai compressé les fichier web dans
+"doc.zip". Utilisé n'imporqu'elle navigateur web ou éditeur texte pour
+lire la documentation.
+
+Si vous avez besoin d'aide
+--------------------------
+
+Lisez toute la documentation (dans le fichier zip et le programme)
+attentivement. Il y a de forte chance qu'une réponse à votre question
+y soit répertorié.
+
+Si vous trouvez toujours pas la réponse à votre question, envoyez un
+courriel, avec toutes les informations que vous jugez pertinentes, à
+l'adresse spécifié dans la documentaion. Une question tel que
+"Pourquoi ça ne fonctionne pas" est trop général pour être répondu
+convenablement. Décrivez clairement votre problème.
+
+Ne demander pas faire pour obtenir des images de jeux
+commerciale. C'est illégal partout à travers le monde. Les demandes
+seront ignorées.
+
+Trademarks
+----------
+
+"Palm" est une marque déposé de Palm.
+"Gameboy" est une marque déposé deNintendo.

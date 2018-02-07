@@ -1,0 +1,535 @@
+///////////////////////////////////////////////////////////////////////////
+//  LC_ja_JP/Phoinix.rcp.in
+//                      Resources for the user interface
+//                      (Japanese/Japan version)
+//                      Basis by Bodo Wenzel <palm.gb_emu@gmx.de>,
+//                      translated by Yukihiro Sugimura <ryunoske@mizuho.zzn.com>
+//
+///////////////////////////////////////////////////////////////////////////
+//
+// Phoinix,
+// Nintendo Gameboy(TM) emulator for the Palm OS(R) Computing Platform
+//
+// (c)2000-2004 Bodo Wenzel
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+///////////////////////////////////////////////////////////////////////////
+//  History:
+//
+//  $Log$
+///////////////////////////////////////////////////////////////////////////
+//  Coding of special characters:
+//
+//  " . "   Bullet point     = \x95
+//          New line         = \n
+//
+//  "TM"    Trademark        = \x99
+//  "(C)"   Copyright        = \xa9
+//  "(R)"   Registered TM    = \xae
+//
+//  "x"     Multiply sign    = \xd7
+//
+//  The coding of the Japanese characters are kept though they are not
+//  ASCII, so that further editing is possible.
+//
+///////////////////////////////////////////////////////////////////////////
+
+#include "Phoinix.h"
+
+//=== Application launcher ================================================
+
+VERSION "##VERSION##"
+
+// The name and creator ID are set by the build-prc tool.
+
+ICONFAMILY      "icon1.bmp" "icon2.bmp" "icon4.bmp" "icon8.bmp"
+  TRANSPARENT 0 255 0
+SMALLICONFAMILY "smic1.bmp" "smic2.bmp" "smic4.bmp" "smic8.bmp"
+  TRANSPARENT 0 255 0
+
+// This resource tells the H330's OS that it's high-rez.
+HEX "sKst" ID 1000 0x00 0x00 0x00 0x00
+
+//=== Startup =============================================================
+
+ALERT ID alertIdStartupIncompatibleRom
+  ERROR
+BEGIN
+  TITLE "ｼｽﾃﾑ相違"
+  MESSAGE "このﾃﾞﾊﾞｲｽのｼｽﾃﾑﾊﾞｰｼﾞｮﾝはｻﾎﾟｰﾄしていません。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdStartupIncompatibleScreen
+  ERROR
+BEGIN
+  TITLE "ｼｽﾃﾑ相違"
+ MESSAGE "このﾃﾞﾊﾞｲｽのｽｸﾘｰﾝはｻﾎﾟｰﾄしていません。"
+  BUTTONS "OK"
+END
+
+//=== About ===============================================================
+
+FORM ID formIdAbout AT (2 BOTTOM@160-2 160-2-2 160-2-2)
+  MODAL
+  HELPID helpIdAbout
+BEGIN
+  TITLE "Phoinixについて"
+
+  FORMBITMAP AT (5 18) BITMAP bmpIdAbout
+  LABEL "ｹﾞｰﾑﾎﾞｰｲ ｴﾐｭﾚｰﾀ" AUTOID AT (15 85) FONT 1
+
+  LABEL "(c) ##COPYRIGHT##"             AUTOID AT (PREVLEFT 100)
+  LABEL "http://phoinix.sourceforge.net" AUTOID AT (PREVLEFT PREVBOTTOM-1)
+  LABEL "mailto:palm.gb_emu@gmx.de"      AUTOID AT (PREVLEFT PREVBOTTOM-1)
+
+  BUTTON "OK" ID buttonIdAboutOk AT (2+4 BOTTOM@160-2-2-1-4 35 AUTO)
+  LABEL "v.##VERSION##" AUTOID AT (RIGHT@160-2-8 PREVTOP)
+END
+
+BITMAPGREY bmpIdAbout "Phoinix.bmp" COMPRESS
+
+STRING ID helpIdAbout
+  "Phoinix v.##VERSION##\n"\
+  "Build ##BUILD##\n"\
+  "\n"\
+  "PhoinixはGNUﾌﾘｰｿﾌﾄｳｪｱです。\n"\
+  "http://www.gnu.org/copyleft/gpl.htmlをご覧下さい。\n"\
+  "料金のことは考えなくていいんです！\n"\
+  "もし私に何か援助したいと考えているなら、この住所にｸｯｷｰを送ってください。\n"\
+  "##ADDRESS##"\
+  "\n"\
+  "\"Palm\"はﾊﾟｰﾑ社の登録商標です。\n"\
+  "\"Gameboy\"は任天堂の登録商標です。\n"\
+  "\n"\
+  "警告: このｿﾌﾄｳｪｱはあなたのﾊﾟｰﾑ(R)ﾌﾟﾗｯﾄﾌｫｰﾑにとって危険です!"\
+  "他のｱﾌﾟﾘｹｰｼｮﾝで作成されたﾃﾞｰﾀを損傷するかもしれません。\n"\
+  "ﾊｰﾄﾞｳｪｱﾘｾｯﾄにより全てのﾃﾞｰﾀとﾌﾟﾛｸﾞﾗﾑを削除することになるかもしれません。\n"\
+  "\n"\
+  "もしPhoinixがｸﾗｯｼｭしたﾃﾞｰﾀﾍﾞｰｽを作成するｴﾗｰを見つけたら、"\
+  "私(palm.gb_emu@gmx.de)に連絡してください。\n"\
+  "\n"\
+  "謝辞:\n"\
+  " Till Harbaum、彼はﾊﾟｰﾑのﾊﾞｸﾞに苦しんでいた私を救ってくれた。彼なしにこれほど精力的に活動できなかっただろ!\n"\
+  " Jeff Frohwein、彼はｹﾞｰﾑﾎﾞｰｲ開発のためのｿﾌﾄｳｪｱとﾄﾞｷｭﾒﾝﾄをそろえてくれた。\n"\
+  " ﾚﾎﾟｰﾄやｺﾒﾝﾄを送ってくれたひと、みんなが楽しんでくれればうれしいです！\n"\
+  " ﾌﾘｰｳｪｱをｻﾎﾟｰﾄする全てのひと、開発にはGNUﾂｰﾙ群を利用しました。\n"\
+  "\n"\
+  "警告:\n"\
+  " 全てのﾌﾟﾛｸﾞﾗﾏと企業には製品を販売する権利があります。\n"\
+  " ｿﾌﾄｳｪｱの著作権侵害は犯罪です!\n"\
+  " この理由により市販製品のイメージを手に入れる方法を教えることはできません。"\
+  " しかしながら、ｲﾝﾀｰﾈｯﾄを検索すると、開発者がﾌﾘｰｳｪｱとして提供しているものが見つかります。\n"\
+  "\n"\
+  "Phoinixのｳｪﾌﾞｻｲﾄ上では、ﾌﾘｰのｹﾞｰﾑへのﾘﾝｸとさらに詳しい情報が見つけられます。"
+
+//=== Button Mapping ======================================================
+
+FONT ID fontIdButtonMapping FONTID fontButtonMapping "buttons.fnt"
+
+FORM ID formIdButtonMapping AT (2 BOTTOM@160-2 160-2-2 87)
+  MODAL
+  HELPID helpIdButtonMapping
+  DEFAULTBTNID buttonIdButtonMappingCancel
+BEGIN
+  TITLE "ﾎﾞﾀﾝﾏｯﾋﾟﾝｸﾞ"
+
+  FORMBITMAP AT (80-8-(2*30) 28+2) BITMAP bmpIdButtonMapping1
+  POPUPTRIGGER "" ID popupIdButtonMappingDb
+    AT (80-6-(16/2)-(2*30) 28+2+16+2     0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingDb AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingDb listIdButtonMappingDb
+
+  FORMBITMAP AT (80-8-(1*30) 28+4) BITMAP bmpIdButtonMapping1
+  POPUPTRIGGER "" ID popupIdButtonMappingAb
+    AT (80-6-(16/2)-(1*30) 28+4+16+2     0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingAb AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingAb listIdButtonMappingAb
+
+  FORMBITMAP AT (80-8        28+0) BITMAP bmpIdButtonMapping2
+  POPUPTRIGGER "" ID popupIdButtonMappingUp
+    AT (80-6-(16/2)        BOTTOM@28+0-2 0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingUp AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingUp listIdButtonMappingUp
+  POPUPTRIGGER "" ID popupIdButtonMappingDn
+    AT (80-6-(16/2)        28+0+23+2     0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingDn AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingDn listIdButtonMappingDn
+
+  FORMBITMAP AT (80-8+(1*30) 28+4) BITMAP bmpIdButtonMapping1
+  POPUPTRIGGER "" ID popupIdButtonMappingTd
+    AT (80-6-(16/2)+(1*30) 28+4+16+2     0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingTd AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingTd listIdButtonMappingTd
+
+  FORMBITMAP AT (80-8+(2*30) 28+2) BITMAP bmpIdButtonMapping1
+  POPUPTRIGGER "" ID popupIdButtonMappingMm
+    AT (80-6-(16/2)+(2*30) 28+2+16+2     0 AUTO)
+    LEFTANCHOR FONT fontButtonMapping
+  LIST "" ID listIdButtonMappingMm AT (PREVLEFT+8 PREVTOP 16 0)
+    NONUSABLE FONT fontButtonMapping
+  POPUPLIST ID popupIdButtonMappingMm listIdButtonMappingMm
+
+  BUTTON "OK"     ID buttonIdButtonMappingOk
+    AT (2+3           BOTTOM@87-1-4 35        AUTO)
+  BUTTON "ｷｬﾝｾﾙ" ID buttonIdButtonMappingCancel
+    AT (PREVRIGHT+2+4 PREVTOP       PREVWIDTH AUTO)
+END
+
+BITMAP bmpIdButtonMapping1 "button1.bmp" COMPRESS
+
+BITMAP bmpIdButtonMapping2 "button2.bmp" COMPRESS
+
+STRING ID helpIdButtonMapping
+  "各ﾎﾞﾀﾝをｴﾐｭﾚｰﾄさせるﾊｰﾄﾞｷｰを選んでください。\n"\
+  "ｽｸﾘｰﾝ上の \"Select\" と \"Start\" はﾏｯﾋﾟﾝｸﾞできません。\n"\
+  "\n"\
+  "WorldWide Widget Works製のｹﾞｰﾑﾊﾟｯﾄﾞがｻﾎﾟｰﾄされています。\n"\
+  "それらのｷｰのﾚｲｱｳﾄは固定されていてﾏｯﾋﾟﾝｸﾞできません。\n"\
+  "\n"\
+  "Handspring製では、AddressBookとToDoｷｰが\"Left\"と\"Right\"にそれぞれ割り当てられています。\n"\
+  "\"A\"と\"B\"は割り当ててください。"
+
+//=== No Game Installed ===================================================
+
+FORM ID formIdNoGame AT (0 0 160 160)
+  MENUID menuIdNoGame
+BEGIN
+  TITLE "Phoinix"
+  LABEL "ｹﾞｰﾑがありません。"  AUTOID AT (CENTER@80 40) FONT 2
+  LABEL "phoinix.sourceforge.netの" AUTOID AT (CENTER@80 80) FONT 0
+  LABEL "ﾌﾘｰｹﾞｰﾑのﾘﾝｸを訪ねてみてください。" AUTOID AT (CENTER@80 PREVBOTTOM) FONT 0
+END
+
+MENU ID menuIdNoGame
+BEGIN
+  PULLDOWN "ｵﾌﾟｼｮﾝ"
+  BEGIN
+    MENUITEM "Tips"          ID menuIdNoGameOptionsTips
+    MENUITEM "Phoinixについて" ID menuIdNoGameOptionsAbout
+  END
+END
+
+STRING ID helpIdNoGame
+  "Phoinixはｹﾞｰﾑのﾊﾞｲﾅﾘﾃﾞｰﾀを稼動するのに必要なｹﾞｰﾑﾎﾞｰｲのﾊｰﾄﾞｳｪｱ機能のみをｴﾐｭﾚｰﾄします。\n"\
+  "\"*.GB\"ﾌｧｲﾙ拡張子を持つ共通規格のﾌｧｲﾙを探してください。\n"\
+  "\n"\
+  "ｹﾞｰﾑﾌｧｲﾙを手に入れた後、ﾊﾟｰﾑ用ﾃﾞｰﾀﾍﾞｰｽ (\"*.PDB\")へ変換しなければなりません。\n"\
+  "あなたのPC上で、ｺﾝﾊﾞｰﾀｰ\"gb2pdb\"を利用し、記録します。\n"\
+  "ﾄﾞｷｭﾒﾝﾄをご覧下さい!"
+
+//=== Game Manager ========================================================
+
+ALERT ID alertIdManagerListError
+  ERROR
+BEGIN
+  TITLE "ｱﾌﾟﾘｹｰｼｮﾝｴﾗｰ"
+  MESSAGE "ｹﾞｰﾑﾘｽﾄを作成できませんでした。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdManagerListIncomplete
+  ERROR
+BEGIN
+  TITLE "ｱﾌﾟﾘｹｰｼｮﾝｴﾗｰ"
+  MESSAGE "ﾒﾓﾘｰ問題によりｹﾞｰﾑﾘｽﾄが完成していません。"
+  BUTTONS "OK"
+END
+
+FORM ID formIdManager AT (0 0 160 160)
+  MENUID menuIdManager
+BEGIN
+  TITLE "Phoinix"
+
+  POPUPTRIGGER "" ID popupIdManagerName AT (0 17 0 AUTO) LEFTANCHOR
+  LIST "" ID listIdManagerName
+    AT (PREVRIGHT+13 PREVTOP 160-(PREVRIGHT+13)-2 0) NONUSABLE
+  FIELD ID fieldIdManagerName
+    AT (PREVLEFT+4 PREVTOP 160-(PREVLEFT+4)-2 AUTO) FONT 1
+    UNDERLINED MAXCHARS dmDBNameLength-1 AUTOSHIFT
+  POPUPLIST ID popupIdManagerName listIdManagerName
+
+  LABEL "Location:" labelIdManagerLocation AT (RIGHT@55 32) FONT 1
+  POPUPTRIGGER "" ID popupIdManagerLocation 
+    AT (PREVRIGHT+5 PREVTOP AUTO AUTO) LEFTANCHOR
+  LIST "" ID listIdManagerLocation
+    AT (PREVRIGHT PREVTOP 160-PREVRIGHT-2 AUTO) NONUSABLE
+  POPUPLIST ID popupIdManagerLocation listIdManagerLocation
+
+  LABEL "Type:" AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
+  LABEL "(30 chars)--------------------" labelIdManagerType
+    AT (PREVRIGHT+5 PREVTOP)
+  LABEL "ROM:"  AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
+  LABEL "(15 chars)-----" labelIdManagerRom AT (PREVRIGHT+5 PREVTOP)
+  LABEL "RAM:"  AUTOID AT (RIGHT@55 PREVBOTTOM) FONT 1
+  LABEL "(15 chars)-----" labelIdManagerRam AT (PREVRIGHT+5 PREVTOP)
+
+  BUTTON "開始!" ID buttonIdManagerGo
+    AT (CENTER@80 BOTTOM@160-1 80+2 72+2) FONT 2
+
+  GRAFFITISTATEINDICATOR AT (160-10 160-(72+2)-15)
+END
+
+MENU ID menuIdManager
+BEGIN
+  PULLDOWN "実行"
+  BEGIN
+    MENUITEM "ｹﾞｰﾑの削除" ID menuIdManagerActionsDeleteGame
+  END
+
+  PULLDOWN "編集"
+  BEGIN
+    MENUITEM "元に戻す"          ID sysEditMenuUndoCmd      "U"
+    MENUITEM "切り取り"           ID sysEditMenuCutCmd       "X"
+    MENUITEM "ｺﾋﾟｰ"          ID sysEditMenuCopyCmd      "C"
+    MENUITEM "ﾍﾟｰｽﾄ"         ID sysEditMenuPasteCmd     "P"
+    MENUITEM "全て選択"    ID sysEditMenuSelectAllCmd "S"
+    MENUITEM SEPARATOR
+    MENUITEM "ｷｰﾎﾞｰﾄﾞ"      ID sysEditMenuKeyboardCmd  "K"
+    MENUITEM "Graffiti Help" ID sysEditMenuGraffitiCmd  "G"
+  END
+
+  PULLDOWN "ｵﾌﾟｼｮﾝ"
+  BEGIN
+    MENUITEM "ﾎﾞﾀﾝﾏｯﾋﾟﾝｸﾞ" ID menuIdManagerOptionsButtonMapping
+    MENUITEM SEPARATOR
+    MENUITEM "Tips"           ID menuIdManagerOptionsTips
+    MENUITEM "Phoinixについて"  ID menuIdManagerOptionsAbout
+  END
+END
+
+STRING ID helpIdManager
+  "2つの方法から遊びたいｹﾞｰﾑを選択してください:\n"\
+  " 1.ﾎﾟｯﾌﾟｱｯﾌﾟのﾘｽﾄの中から選択する。\n"\
+  " 2.ｽｸﾛｰﾙﾎﾞﾀﾝを押す。\n"\
+  "\n"\
+  "ｴﾐｭﾚｰｼｮﾝを開始するには\"開始!\"をﾀｯﾌﾟします。\n"\
+  "すると、ｹﾞｰﾑﾎﾞｰｲにｽｲｯﾁをいれたように、ｹﾞｰﾑがはじまります。\n"\
+  "\n"\
+  "あなたの使いやすいようにｹﾞｰﾑ名を変更できます。\n"\
+  "ｴﾝﾄﾘｰをｷｬﾝｾﾙする場合は、ﾎﾟｯﾌﾟｱｯﾌﾟのﾘｽﾄから再度選択します。"
+
+ALERT ID alertIdManagerDeleteGame
+  WARNING
+  DEFAULTBUTTON 1
+BEGIN
+  TITLE "ｹﾞｰﾑの削除"
+  MESSAGE "\"^1\"を削除してもよろしいですか?"
+  BUTTONS "OK" "ｷｬﾝｾﾙ"
+END
+
+ALERT ID alertIdManagerDeleteError
+  ERROR
+BEGIN
+  TITLE "ｹﾞｰﾑの削除"
+  MESSAGE "ｹﾞｰﾑは削除できません。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdManagerRenameError
+  ERROR
+BEGIN
+  TITLE "ｹﾞｰﾑの名前変更"
+  MESSAGE "ｹﾞｰﾑの名前は変更できません。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdManagerCantRun
+  ERROR
+BEGIN
+  TITLE "ｴﾐｭﾚｰｼｮﾝｴﾗｰ"
+  MESSAGE "このｹﾞｰﾑは実行できません。"
+  BUTTONS "OK"
+END
+
+STRING ID stringIdManagerGameError
+  "失敗"
+
+STRING ID stringIdManagerGameUnknown
+  "不明"
+
+STRING ID stringIdManagerGameKBytes
+  "%u KBytes"
+
+STRING ID stringIdManagerGameMbc2
+  "512 x 4 Bits"
+
+//=== Saved States ========================================================
+
+ALERT ID alertIdStatesLoadError
+  ERROR
+BEGIN
+  TITLE "ｹﾞｰﾑの状態"
+  MESSAGE "ｹﾞｰﾑの設定を読込できません。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdStatesSaveError
+  ERROR
+BEGIN
+  TITLE "ｹﾞｰﾑの状態"
+  MESSAGE "ｹﾞｰﾑの設定を保存できません。"
+  BUTTONS "OK"
+END
+
+//=== Emulation ===========================================================
+
+FORM ID formIdEmulation AT (0 0 160 160)
+  MENUID menuIdEmulation
+BEGIN
+  BUTTON "Select" ID buttonIdEmulationSelect
+    AT (RIGHT@80-6 BOTTOM@159 30 AUTO) DISABLED
+  BUTTON "Start"  ID buttonIdEmulationStart
+    AT (80+6       BOTTOM@159 30 AUTO) DISABLED
+
+  POPUPTRIGGER "" ID popupIdEmulationInfo
+    AT (120 BOTTOM@159 54 AUTO) LEFTANCHOR
+  /* NOTE: the texts have to match the EmulationInfoType in emulation.h! */
+  LIST "ﾌﾟﾚｲ時間" "ﾊﾞｯﾃﾘｰ" "ｽﾋﾟｰﾄﾞ" ID listIdEmulationInfo
+    AT (PREVLEFT+4 PREVTOP AUTO AUTO) NONUSABLE VISIBLEITEMS 3
+  POPUPLIST ID popupIdEmulationInfo listIdEmulationInfo
+
+  CHECKBOX "実行" ID checkboxIdEmulationRun AT (0 BOTTOM@159 AUTO AUTO)
+END
+
+// This form is for GB screen's bounds only, not to be shown.
+FORM ID formIdEmulationScreen AT (0 0 240 240)
+BEGIN
+  GADGET ID gadgetIdEmulationSmall AT (0 0   160 144)
+  GADGET ID gadgetIdEmulationH330  AT (40 36 160 144)
+END
+
+MENU ID menuIdEmulation
+BEGIN
+  PULLDOWN "ｹﾞｰﾑ"
+  BEGIN
+    MENUITEM "終了"    ID menuIdEmulationGameQuit
+    MENUITEM SEPARATOR
+    MENUITEM "ﾘｾｯﾄ"   ID menuIdEmulationGameReset
+  END
+
+  PULLDOWN "ｵﾌﾟｼｮﾝ"
+  BEGIN
+    MENUITEM "ﾎﾞﾀﾝﾏｯﾋﾟﾝｸﾞ" ID menuIdEmulationOptionsButtonMapping
+    MENUITEM SEPARATOR
+    MENUITEM "Tips"           ID menuIdEmulationOptionsTips
+    MENUITEM "Phoinixについて"  ID menuIdEmulationOptionsAbout
+  END
+END
+
+STRING ID helpIdEmulation
+  "実機のｹﾞｰﾑﾎﾞｰｲのようにｽｲｯﾁをON/OFFしてｹﾞｰﾑを再実行するには、\"ﾘｾｯﾄ\"を使用します。\n"\
+  "\n"\
+  "ｹﾞｰﾑを中断するには\"実行\"のﾁｪｯｸをはずします。これはｽｸﾘｰﾝｼｮｯﾄをとるのに便利です。"
+
+ALERT ID alertIdEmulationSetupError
+  ERROR
+BEGIN
+  TITLE "ｴﾐｭﾚｰｼｮﾝｴﾗｰ"
+  MESSAGE "ｴﾚﾐｭﾚｰｼｮﾝの準備ができません。\n"\
+          " 十分な空きﾒﾓﾘｰを用意してください。\n"\
+       	  " 現在、PhoinixはﾌﾗｯｼｭROMで実行できません。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdEmulationRunError
+  ERROR
+BEGIN
+  TITLE "ｴﾐｭﾚｰｼｮﾝｴﾗｰ"
+  MESSAGE "ｴﾐｭﾚｰﾄ中にｴﾗｰが発生しました。\n"\
+          "palm.gb_emu@gmx.de に報告してください。\n"\
+          "できる限り状況を教えてください。"
+  BUTTONS "OK"
+END
+
+//=== VFS =================================================================
+STRING ID stringerrNone                    "ｴﾗｰなし"
+STRING ID stringvfsErrBufferOverflow       "ﾊﾞｯﾌｧｰが小さすぎます"
+STRING ID stringvfsErrFileGeneric          "一般ﾌｧｲﾙｴﾗｰ"
+STRING ID stringvfsErrFileBadRef           "無効なﾌｧｲﾙを参照しました"
+STRING ID stringvfsErrFileStillOpen        "ﾌｧｲﾙがまだ開かれています"
+STRING ID stringvfsErrFilePermissionDenied "ﾌｧｲﾙは読込専用です"
+STRING ID stringvfsErrFileAlreadyExists    "ﾌｧｲﾙは既に存在しています"
+STRING ID stringvfsErrFileEOF              "EOFに到達しました"
+STRING ID stringvfsErrFileNotFound         "ﾌｧｲﾙが見つかりません"
+STRING ID stringvfsErrVolumeBadRef         "無効なﾎﾞﾘｭｰﾑを参照しました"
+STRING ID stringvfsErrVolumeStillMounted   "ﾎﾞﾘｭｰﾑはまだﾏｳﾝﾄされています"
+STRING ID stringvfsErrNoFileSystem         "ﾌｧｲﾙｼｽﾃﾑがありません"
+STRING ID stringvfsErrBadData              "不正なﾃﾞｰﾀです"
+STRING ID stringvfsErrDirNotEmpty          "ﾃﾞｨﾚｸﾄﾘが空です"
+STRING ID stringvfsErrBadName              "無効なﾌｧｲﾙまたはﾎﾞﾘｭｰﾑ名です"
+STRING ID stringvfsErrVolumeFull           "ﾃﾞﾊﾞｲｽ上にｽﾍﾟｰｽがありません"
+STRING ID stringvfsErrUnimplemented        "機能が実行できません"
+STRING ID stringvfsErrNotADirectory        "ﾃﾞｨﾚｸﾄﾘではありません"
+STRING ID stringvfsErrIsADirectory         "ﾌｧｲﾙではありません"
+STRING ID stringvfsErrDirectoryNotFound    "ﾃﾞｨﾚｸﾄﾘが見つかりません"
+STRING ID stringvfsErrNameShortened        "ﾌｧｲﾙ名が短すぎます"
+STRING ID stringvfsErrUnknown              "不明なｴﾗｰ"
+STRING ID stringdmErrAlreadyExists         "ﾃﾞｰﾀﾍﾞｰｽが既に存在しています"
+
+STRING ID stringCreateDir                  "phoinixﾃﾞｨﾚｸﾄﾘを作成中"
+STRING ID stringExportDb                   "ｹﾞｰﾑﾃﾞｰﾀﾍﾞｰｽを出力中"
+STRING ID stringFetchHead                  "ｹﾞｰﾑｶｰﾄﾘｯｼﾞ情報をﾛｰﾄﾞ中"
+STRING ID stringScanForGames               "ｹﾞｰﾑﾃﾞｰﾀﾍﾞｰｽを検索中"
+STRING ID stringImportDb                   "ｹﾞｰﾑﾃﾞｰﾀﾍﾞｰｽを取込中"
+STRING ID stringMoveDb                     "ｹﾞｰﾑﾃﾞｰﾀﾍﾞｰｽを移動中"
+STRING ID stringDeleteDb                   "ｹﾞｰﾑﾃﾞｰﾀﾍﾞｰｽを削除中"
+
+ALERT ID alertIdVFS
+  ERROR
+BEGIN
+  TITLE "ﾌｧｲﾙｼｽﾃﾑｴﾗｰ"
+  MESSAGE "^1 、ｴﾗｰが発生しました。: ^2"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdGeneric
+  ERROR
+BEGIN
+  TITLE "ｴﾗｰ"
+  MESSAGE "^1 、ｴﾗｰが発生しました。"
+  BUTTONS "OK"
+END
+
+ALERT ID alertIdOverwrite
+  CONFIRMATION
+BEGIN
+  TITLE "警告"
+  MESSAGE "現在のｺﾋﾟｰ作業により上書きされます。\n"\
+          "ｵﾍﾟﾚｰｼｮﾝをこのまま続けますか?"
+  BUTTONS "はい" "いいえ"
+END
+
+//=== Miscellaneous =======================================================
+
+FORM ID formIdBusy AT (CENTER@80 CENTER@80 5+8+5 5+11+5)
+  MODAL
+BEGIN
+  FORMBITMAP AT (5 5) BITMAP bmpIdBusy
+END
+
+BITMAP bmpIdBusy "eggtimer.bmp" COMPRESS
+
+//=== The end =============================================================
