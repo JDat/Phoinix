@@ -39,9 +39,10 @@ USA
 Building
 --------
 
-The source files are created to be used with the GNU tool set. You'll
-find the SDK at Palm's site (http://www.palm.com). You need the header
-files for PalmOS 5 or better.
+The source files are created to be used with the GNU tool set. Because
+Palm website is down You'll
+find the SDK at https://github.com/jichu4n/palm-os-sdk. You need
+the header files for PalmOS 5 or better.
 
 Unpack the source's archive and enter "make". The executables are in
 the directories beginning with LC_, separated by language.
@@ -50,6 +51,16 @@ Before trying to compile, read the chapter 'Prerequisites', please.
 
 Prerequisites
 -------------
+
+You can configure Prerequisites in Phoinix.h header file.
+Following config is available:
+//#define handera
+//#define alphasmart
+//#define sonyclie
+//#define fossil
+//#define palmgamepad
+
+Uncomment to add hardware specific config and add nacessary SDK.
 
 Phoinix supports several third party extensions. To include this
 support you need the corresponding header files in your system include
@@ -84,11 +95,9 @@ For the AlphaSmart Dana you need the corresponding SDK, please visit
 http://www.alphasmart.com and follow the links which are hopefully
 provided.
 
-The GamePad driver kit can be obtained from
-http://www.palmgamepad.com/
-and in the developers' section is a link to the file
-GamePadDevKit.zip. Copy GPDLib.h from this archive to your system
-include directory.
+GamePad Dev Kit header file is already added to Phoinix sources.
+GamePadDevKit.zip (header, driver and config app .prc files) will
+be added to sources soon.
 
 To obtain the Wrist PDA SDK visit http://www.fossil.com/tech, and
 follow the appropriate links. Copy the header files where they belong
